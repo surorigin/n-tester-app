@@ -52,12 +52,45 @@
   .btn:disabled { background: #8a7433; }
   .btn:focus-visible { outline: 2px solid var(--wheat); outline-offset: 3px; }
 
+  .btn-outline {
+    background: none; border: 1px solid var(--err); color: #e8b3a5;
+  }
+
   .error-box {
     display: none; background: rgba(181,67,47,0.15); border: 1px solid var(--err);
     color: #e8b3a5; border-radius: 12px; padding: 14px 16px; font-size: 13px;
     margin-top: 16px; line-height: 1.5; width: 100%;
   }
   .error-box.show { display: block; }
+
+  /* Formulario de nueva sesión */
+  .session-form {
+    display: none;
+    width: 100%; flex-direction: column; gap: 12px;
+  }
+  .session-form.show { display: flex; }
+  .field label {
+    display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-dim); margin-bottom: 6px;
+  }
+  .field input {
+    width: 100%; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 13px 14px; color: var(--text); font-size: 15px;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .field input:focus { outline: 2px solid var(--wheat); border-color: var(--wheat); }
+
+  /* Header de sesión activa */
+  .session-header {
+    display: none; width: 100%; background: var(--surface); border: 1px solid var(--wheat);
+    border-radius: 14px; padding: 14px 16px; margin-bottom: 20px;
+  }
+  .session-header.show { display: block; }
+  .session-header .campo-lote {
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 17px; margin-bottom: 2px;
+  }
+  .session-header .session-meta { font-size: 11.5px; color: var(--text-dim); }
+  .session-header .finish-row { margin-top: 12px; }
 
   .stage {
     display: none;
@@ -136,6 +169,20 @@
   .leaflet-popup-content-wrapper { background: var(--surface-raised); color: var(--text); border-radius: 8px; }
   .leaflet-popup-tip { background: var(--surface-raised); }
   .leaflet-popup-content { font-family: 'Space Grotesk', sans-serif; font-size: 12.5px; margin: 8px 10px; }
+
+  /* Sesiones guardadas */
+  .past-sessions { width: 100%; margin-top: 30px; }
+  .past-sessions h2 {
+    font-family: 'Fraunces', serif; font-size: 15px; font-weight: 600;
+    color: var(--text-dim); margin-bottom: 10px;
+  }
+  .past-item {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 10px;
+  }
+  .past-item .pi-title { font-weight: 600; font-size: 14px; }
+  .past-item .pi-meta { font-size: 11.5px; color: var(--text-dim); margin: 3px 0 10px; }
+  .past-item .pi-actions { display: flex; gap: 8px; }
 </style>
 </head>
 <body>
@@ -143,7 +190,34 @@
   <div class="eyebrow">Yara N-Tester</div>
   <h1>Lectura automática</h1>
 
-  <button class="btn" id="connectBtn">Conectar sensor</button>
+  <!-- Formulario para iniciar una sesión nueva -->
+  <div class="session-form" id="sessionForm">
+    <div class="field">
+      <label for="campoInput">Campo</label>
+      <input type="text" id="campoInput" placeholder="Ej: La Esperanza">
+    </div>
+    <div class="field">
+      <label for="loteInput">Lote</label>
+      <input type="text" id="loteInput" placeholder="Ej: Lote 4">
+    </div>
+    <button class="btn" id="startSessionBtn">Iniciar sesión</button>
+  </div>
+
+  <div class="past-sessions" id="pastSessions" style="display:none;">
+    <h2>Sesiones guardadas</h2>
+    <div id="pastSessionsList"></div>
+  </div>
+
+  <!-- Header de sesión activa -->
+  <div class="session-header" id="sessionHeader">
+    <div class="campo-lote" id="sessionTitle">—</div>
+    <div class="session-meta" id="sessionMeta">—</div>
+    <div class="finish-row">
+      <button class="btn btn-outline" id="finishSessionBtn">Finalizar sesión</button>
+    </div>
+  </div>
+
+  <button class="btn" id="connectBtn" style="display:none;">Conectar sensor</button>
   <div class="error-box" id="errorBox"></div>
 
   <div class="stage" id="stage">
@@ -167,7 +241,6 @@
       <span>Mediciones</span>
       <div style="display:flex; gap:8px;">
         <button class="btn-export" id="exportBtn">Exportar CSV</button>
-        <button class="btn-export" id="clearBtn">Borrar</button>
       </div>
     </div>
     <ul class="log-list" id="logList"></ul>
@@ -195,6 +268,20 @@
   const nLabel = document.getElementById('nLabel');
   const lastTime = document.getElementById('lastTime');
   const countEl = document.getElementById('count');
+  const logWrap = document.getElementById('logWrap');
+  const logList = document.getElementById('logList');
+  const exportBtn = document.getElementById('exportBtn');
+  const mapWrap = document.getElementById('mapWrap');
+  const sessionForm = document.getElementById('sessionForm');
+  const campoInput = document.getElementById('campoInput');
+  const loteInput = document.getElementById('loteInput');
+  const startSessionBtn = document.getElementById('startSessionBtn');
+  const sessionHeader = document.getElementById('sessionHeader');
+  const sessionTitle = document.getElementById('sessionTitle');
+  const sessionMeta = document.getElementById('sessionMeta');
+  const finishSessionBtn = document.getElementById('finishSessionBtn');
+  const pastSessions = document.getElementById('pastSessions');
+  const pastSessionsList = document.getElementById('pastSessionsList');
 
   const SERVICE_UUIDS = [
     '0000180a-0000-1000-8000-00805f9b34fb',
@@ -215,25 +302,36 @@
   let pollTimer = null;
   let prevPoll11 = null, prevPoll12 = null;
   let lastCaptured11 = null, lastCaptured12 = null;
-  const STORAGE_KEY = 'ntester_readings';
-  let readings = loadReadings();
-  let readingCount = readings.length ? Math.max(...readings.map(r => r.num)) : 0;
   const STABLE_EPS = 0.01;      // dos sondeos consecutivos casi iguales = lectura asentada
   const CHANGE_EPS = 1.0;       // diferencia mínima contra la última captura para contar como lectura nueva
 
-  function loadReadings() {
+  // --- Sesiones ---
+  const ACTIVE_KEY = 'ntester_active_session';
+  const SESSIONS_KEY = 'ntester_sessions';
+  let activeSession = loadActive();
+  let sessions = loadSessions();
+
+  function loadActive() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(ACTIVE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function saveActive() {
+    try {
+      if (activeSession) localStorage.setItem(ACTIVE_KEY, JSON.stringify(activeSession));
+      else localStorage.removeItem(ACTIVE_KEY);
+    } catch (e) {}
+  }
+  function loadSessions() {
+    try {
+      const raw = localStorage.getItem(SESSIONS_KEY);
       return raw ? JSON.parse(raw) : [];
     } catch (e) { return []; }
   }
-  function saveReadings() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(readings)); } catch (e) {}
+  function saveSessions() {
+    try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions)); } catch (e) {}
   }
-
-  const logWrap = document.getElementById('logWrap');
-  const logList = document.getElementById('logList');
-  const exportBtn = document.getElementById('exportBtn');
 
   function showError(msg) {
     errorBox.textContent = msg;
@@ -262,6 +360,7 @@
   }
 
   function renderLog() {
+    const readings = activeSession ? activeSession.readings : [];
     logWrap.style.display = readings.length ? 'block' : 'none';
     logList.innerHTML = readings.map((r, i) => `
       <li class="log-item">
@@ -275,16 +374,14 @@
     logList.querySelectorAll('.log-del').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = Number(btn.dataset.idx);
-        readings.splice(idx, 1);
-        saveReadings();
+        activeSession.readings.splice(idx, 1);
+        saveActive();
         renderLog();
-        renderMap();
       });
     });
     renderMap();
   }
 
-  const mapWrap = document.getElementById('mapWrap');
   let mapInstance = null;
   let markersLayer = null;
 
@@ -300,6 +397,7 @@
   }
 
   function renderMap() {
+    const readings = activeSession ? activeSession.readings : [];
     const withGeo = readings.filter(r => r.geo);
     mapWrap.style.display = withGeo.length ? 'block' : 'none';
     if (!withGeo.length) return;
@@ -324,47 +422,151 @@
     setTimeout(() => mapInstance.invalidateSize(), 100);
   }
 
-  function downloadCsv() {
+  function csvFor(session) {
     const header = 'numero,n_estimado,latitud,longitud,precision_m,hora\n';
-    const rows = readings.map(r =>
+    const rows = session.readings.map(r =>
       [r.num, r.n, r.geo ? r.geo.lat : '', r.geo ? r.geo.lon : '', r.geo ? Math.round(r.geo.acc) : '', r.time].join(',')
     ).join('\n');
-    const blob = new Blob([header + rows], { type: 'text/csv' });
+    return header + rows;
+  }
+
+  function slug(s) {
+    return (s || 'sesion').toString().trim().toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'sesion';
+  }
+
+  function downloadCsv(session, filename) {
+    const blob = new Blob([csvFor(session)], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'mediciones-n-tester.csv';
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   }
-  exportBtn.addEventListener('click', downloadCsv);
 
-  const clearBtn = document.getElementById('clearBtn');
-  clearBtn.addEventListener('click', () => {
-    if (!confirm('¿Borrar las ' + readings.length + ' mediciones guardadas? Esto no se puede deshacer.')) return;
-    readings = [];
-    saveReadings();
-    renderLog();
+  exportBtn.addEventListener('click', () => {
+    if (!activeSession) return;
+    downloadCsv(activeSession, `${slug(activeSession.campo)}_${slug(activeSession.lote)}_en-curso.csv`);
   });
 
-  // Mostrar historial guardado apenas abre la app, sin esperar conexión
-  renderLog();
-  if (readings.length) {
-    countEl.textContent = readingCount + (readingCount === 1 ? ' lectura guardada' : ' lecturas guardadas');
+  // --- Flujo de sesión ---
+  function refreshSessionUI() {
+    if (activeSession) {
+      sessionForm.classList.remove('show');
+      pastSessions.style.display = 'none';
+      sessionHeader.classList.add('show');
+      connectBtn.style.display = 'block';
+      sessionTitle.textContent = `${activeSession.campo} · ${activeSession.lote}`;
+      const start = new Date(activeSession.startTime);
+      sessionMeta.textContent = 'Iniciada ' + start.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      countEl.textContent = activeSession.readings.length
+        ? activeSession.readings.length + (activeSession.readings.length === 1 ? ' lectura guardada' : ' lecturas guardadas')
+        : '';
+    } else {
+      sessionForm.classList.add('show');
+      sessionHeader.classList.remove('show');
+      connectBtn.style.display = 'none';
+      stage.classList.remove('show');
+      logWrap.style.display = 'none';
+      mapWrap.style.display = 'none';
+      renderPastSessions();
+    }
   }
 
-  // Registrar el service worker para que la app funcione offline y sea instalable
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+  function renderPastSessions() {
+    pastSessions.style.display = sessions.length ? 'block' : 'none';
+    pastSessionsList.innerHTML = sessions.slice().reverse().map((s) => {
+      const start = new Date(s.startTime);
+      const dateStr = start.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      return `
+        <div class="past-item" data-id="${s.id}">
+          <div class="pi-title">${s.campo} · ${s.lote}</div>
+          <div class="pi-meta">${dateStr} — ${s.readings.length} ${s.readings.length === 1 ? 'lectura' : 'lecturas'}</div>
+          <div class="pi-actions">
+            <button class="btn-export pi-export" data-id="${s.id}">Exportar CSV</button>
+            <button class="btn-export pi-delete" data-id="${s.id}" style="color:#e8b3a5; border-color: var(--err);">Borrar</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    pastSessionsList.querySelectorAll('.pi-export').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const s = sessions.find(x => x.id === btn.dataset.id);
+        if (s) downloadCsv(s, `${slug(s.campo)}_${slug(s.lote)}.csv`);
+      });
+    });
+    pastSessionsList.querySelectorAll('.pi-delete').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const s = sessions.find(x => x.id === btn.dataset.id);
+        if (!s) return;
+        if (!confirm(`¿Borrar la sesión "${s.campo} · ${s.lote}" con ${s.readings.length} mediciones? No se puede deshacer.`)) return;
+        sessions = sessions.filter(x => x.id !== btn.dataset.id);
+        saveSessions();
+        renderPastSessions();
+      });
     });
   }
 
+  startSessionBtn.addEventListener('click', () => {
+    const campo = campoInput.value.trim();
+    const lote = loteInput.value.trim();
+    if (!campo || !lote) {
+      showError('Completá campo y lote antes de iniciar.');
+      return;
+    }
+    clearError();
+    activeSession = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      campo, lote,
+      startTime: new Date().toISOString(),
+      readings: []
+    };
+    saveActive();
+    campoInput.value = '';
+    loteInput.value = '';
+    refreshSessionUI();
+    renderLog();
+  });
+
+  finishSessionBtn.addEventListener('click', () => {
+    if (!activeSession) return;
+    const count = activeSession.readings.length;
+    if (!confirm(`¿Finalizar la sesión "${activeSession.campo} · ${activeSession.lote}" con ${count} ${count === 1 ? 'medición' : 'mediciones'}? Vas a poder iniciar una nueva sesión después.`)) return;
+
+    if (pollTimer) clearInterval(pollTimer);
+    char11 = null; char12 = null;
+    prevPoll11 = null; prevPoll12 = null; lastCaptured11 = null; lastCaptured12 = null;
+
+    activeSession.endTime = new Date().toISOString();
+    sessions.push(activeSession);
+    saveSessions();
+    activeSession = null;
+    saveActive();
+
+    connectBtn.disabled = false;
+    connectBtn.textContent = 'Conectar sensor';
+    stage.classList.remove('show');
+    placeholder.style.display = 'block';
+    nValue.style.display = 'none';
+    nLabel.style.display = 'none';
+    lastTime.textContent = '';
+    countEl.textContent = '';
+
+    refreshSessionUI();
+  });
+
   async function displayReading(v11, v12) {
+    if (!activeSession) return;
     const n = estimateN(v11, v12);
     if (n === null) return;
 
-    readingCount++;
+    const num = activeSession.readings.length
+      ? Math.max(...activeSession.readings.map(r => r.num)) + 1
+      : 1;
+
     placeholder.style.display = 'none';
     nValue.style.display = 'block';
     nLabel.style.display = 'block';
@@ -376,16 +578,16 @@
     const now = new Date();
     const timeStr = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     lastTime.textContent = 'Última lectura: ' + timeStr;
-    countEl.textContent = readingCount + (readingCount === 1 ? ' lectura tomada' : ' lecturas tomadas');
 
     const geo = await getLocation();
-    readings.unshift({ num: readingCount, n: Math.round(n), geo, time: timeStr });
-    saveReadings();
+    activeSession.readings.unshift({ num, n: Math.round(n), geo, time: timeStr });
+    saveActive();
+    countEl.textContent = activeSession.readings.length + (activeSession.readings.length === 1 ? ' lectura guardada' : ' lecturas guardadas');
     renderLog();
   }
 
   async function pollLoop() {
-    if (!char11 || !char12) return;
+    if (!char11 || !char12 || !activeSession) return;
     try {
       const dv11 = await char11.readValue();
       const dv12 = await char12.readValue();
@@ -421,6 +623,10 @@
 
   async function connect() {
     clearError();
+    if (!activeSession) {
+      showError('Iniciá una sesión (campo y lote) antes de conectar el sensor.');
+      return;
+    }
     if (!navigator.bluetooth) {
       showError('Este navegador no soporta Web Bluetooth. Usá Chrome en Android.');
       return;
@@ -437,9 +643,10 @@
 
       device.addEventListener('gattserverdisconnected', () => {
         if (pollTimer) clearInterval(pollTimer);
-        showError('El sensor se desconectó. Recargá la página para reconectar.');
+        showError('El sensor se desconectó. Tocá "Conectar sensor" para volver a vincularlo.');
         connectBtn.disabled = false;
         connectBtn.textContent = 'Conectar sensor';
+        connectBtn.style.display = 'block';
         stage.classList.remove('show');
       });
 
@@ -476,6 +683,17 @@
   }
 
   connectBtn.addEventListener('click', connect);
+
+  // Estado inicial al abrir la app
+  refreshSessionUI();
+  if (activeSession) renderLog();
+
+  // Registrar el service worker para que la app funcione offline y sea instalable
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
 </script>
 </body>
 </html>
