@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>N-Tester</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#14110d">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --soil: #14110d;
+    --surface: #1f1a13;
+    --surface-raised: #2a2318;
+    --wheat: #c9a13b;
+    --text: #f5f0e6;
+    --text-dim: #a89a80;
+    --ok: #6b9c4f;
+    --err: #b5432f;
+    --line: #382f21;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--soil); color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 28px 20px 40px;
+  }
+  .app { width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; }
+
+  .eyebrow {
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--wheat); font-weight: 600; margin-bottom: 4px; text-align: center;
+  }
+  h1 {
+    font-family: 'Fraunces', serif; font-weight: 700; font-size: 24px;
+    text-align: center; margin-bottom: 28px;
+  }
+
+  .btn {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 16px;
+    border: none; border-radius: 12px; padding: 16px 28px; cursor: pointer;
+    background: var(--wheat); color: #1c1710; width: 100%;
+    transition: transform 0.12s ease;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { background: #8a7433; }
+  .btn:focus-visible { outline: 2px solid var(--wheat); outline-offset: 3px; }
+
+  .error-box {
+    display: none; background: rgba(181,67,47,0.15); border: 1px solid var(--err);
+    color: #e8b3a5; border-radius: 12px; padding: 14px 16px; font-size: 13px;
+    margin-top: 16px; line-height: 1.5; width: 100%;
+  }
+  .error-box.show { display: block; }
+
+  .stage {
+    display: none;
+    width: 100%; flex-direction: column; align-items: center;
+    margin-top: 8px;
+  }
+  .stage.show { display: flex; }
+
+  .status-line {
+    display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-dim);
+    margin-bottom: 30px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .dot.waiting { background: var(--wheat); box-shadow: 0 0 8px var(--wheat); animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  .reading-circle {
+    width: 240px; height: 240px; border-radius: 50%;
+    background: var(--surface); border: 3px solid var(--line);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: border-color 0.4s ease, transform 0.2s ease;
+  }
+  .reading-circle.flash { transform: scale(1.04); border-color: var(--wheat); }
+
+  .n-value {
+    font-size: 68px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  .n-label { font-size: 12px; color: var(--text-dim); letter-spacing: 0.1em; margin-top: 8px; text-transform: uppercase; }
+  .n-placeholder { color: var(--text-dim); font-size: 15px; text-align: center; padding: 0 30px; line-height: 1.5; }
+
+  .last-time { font-size: 12px; color: var(--text-dim); margin-top: 18px; }
+
+  .count { font-size: 13px; color: var(--text-dim); margin-top: 6px; }
+
+  .footnote {
+    margin-top: 36px; font-size: 11.5px; color: var(--text-dim);
+    text-align: center; line-height: 1.6; padding: 0 8px;
+  }
+
+  .log-wrap {
+    width: 100%; margin-top: 26px; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px;
+  }
+  .log-header {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; color: var(--text-dim); text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 10px;
+  }
+  .btn-export {
+    background: none; border: 1px solid var(--line); color: var(--wheat);
+    font-size: 11px; padding: 5px 10px; border-radius: 8px; cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif; text-transform: none; letter-spacing: normal;
+  }
+  .log-list { list-style: none; max-height: 240px; overflow-y: auto; }
+  .log-item {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 12.5px;
+  }
+  .log-item:last-child { border-bottom: none; }
+  .log-num { color: var(--wheat); font-weight: 700; min-width: 22px; }
+  .log-n { font-weight: 700; }
+  .log-geo { color: var(--text-dim); font-size: 11px; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="eyebrow">Yara N-Tester</div>
+  <h1>Lectura automática</h1>
+
+  <button class="btn" id="connectBtn">Conectar sensor</button>
+  <div class="error-box" id="errorBox"></div>
+
+  <div class="stage" id="stage">
+    <div class="status-line">
+      <span class="dot waiting" id="statusDot"></span>
+      <span id="statusText">Esperando lectura...</span>
+    </div>
+
+    <div class="reading-circle" id="circle">
+      <div class="n-placeholder" id="placeholder">Bajá la pinza sobre la hoja para tomar la primera lectura</div>
+      <div class="n-value" id="nValue" style="display:none;">—</div>
+      <div class="n-label" id="nLabel" style="display:none;">N estimado</div>
+    </div>
+
+    <div class="last-time" id="lastTime"></div>
+    <div class="count" id="count"></div>
+  </div>
+
+  <div class="log-wrap" id="logWrap" style="display:none;">
+    <div class="log-header">
+      <span>Mediciones</span>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-export" id="exportBtn">Exportar CSV</button>
+        <button class="btn-export" id="clearBtn">Borrar</button>
+      </div>
+    </div>
+    <ul class="log-list" id="logList"></ul>
+  </div>
+
+  <div class="footnote">
+    Estimación calculada a partir de la señal óptica cruda del sensor, no del valor oficial de Yara — fórmula recalibrada con mediciones comparadas contra YaraPlus. Puede desviarse.
+  </div>
+</div>
+
+<script>
+  const connectBtn = document.getElementById('connectBtn');
+  const errorBox = document.getElementById('errorBox');
+  const stage = document.getElementById('stage');
+  const statusDot = document.getElementById('statusDot');
+  const statusText = document.getElementById('statusText');
+  const circle = document.getElementById('circle');
+  const placeholder = document.getElementById('placeholder');
+  const nValue = document.getElementById('nValue');
+  const nLabel = document.getElementById('nLabel');
+  const lastTime = document.getElementById('lastTime');
+  const countEl = document.getElementById('count');
+
+  const SERVICE_UUIDS = [
+    '0000180a-0000-1000-8000-00805f9b34fb',
+    '0000180f-0000-1000-8000-00805f9b34fb',
+    '0000181a-0000-1000-8000-00805f9b34fb',
+    '0000ffe0-0000-1000-8000-00805f9b34fb',
+    '0000ffe5-0000-1000-8000-00805f9b34fb',
+    '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
+    '00006e10-0000-1000-8000-00805f9b34fb',
+    '00006e20-0000-1000-8000-00805f9b34fb',
+    '00006e30-0000-1000-8000-00805f9b34fb',
+    '00006e40-0000-1000-8000-00805f9b34fb',
+  ];
+  const CH_11 = '00006e11-0000-1000-8000-00805f9b34fb';
+  const CH_12 = '00006e12-0000-1000-8000-00805f9b34fb';
+
+  let char11 = null, char12 = null;
+  let pollTimer = null;
+  let prevPoll11 = null, prevPoll12 = null;
+  let lastCaptured11 = null, lastCaptured12 = null;
+  const STORAGE_KEY = 'ntester_readings';
+  let readings = loadReadings();
+  let readingCount = readings.length ? Math.max(...readings.map(r => r.num)) : 0;
+  const STABLE_EPS = 0.01;      // dos sondeos consecutivos casi iguales = lectura asentada
+  const CHANGE_EPS = 1.0;       // diferencia mínima contra la última captura para contar como lectura nueva
+
+  function loadReadings() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+  function saveReadings() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(readings)); } catch (e) {}
+  }
+
+  const logWrap = document.getElementById('logWrap');
+  const logList = document.getElementById('logList');
+  const exportBtn = document.getElementById('exportBtn');
+
+  function showError(msg) {
+    errorBox.textContent = msg;
+    errorBox.classList.add('show');
+  }
+  function clearError() { errorBox.classList.remove('show'); }
+
+  function estimateN(v11, v12) {
+    if (v11 <= 0 || v12 <= 0) return null;
+    return 478 * Math.log(v11 / v12) - 449;
+  }
+
+  function getLocation() {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) { resolve(null); return; }
+      navigator.geolocation.getCurrentPosition(
+        pos => resolve({
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+          acc: pos.coords.accuracy
+        }),
+        () => resolve(null),
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 3000 }
+      );
+    });
+  }
+
+  function renderLog() {
+    logWrap.style.display = readings.length ? 'block' : 'none';
+    logList.innerHTML = readings.map(r => `
+      <li class="log-item">
+        <span class="log-num">#${r.num}</span>
+        <span class="log-n">N≈${r.n}</span>
+        <span class="log-geo">${r.geo ? r.geo.lat.toFixed(5) + ', ' + r.geo.lon.toFixed(5) : 'sin GPS'}</span>
+        <span class="log-geo">${r.time}</span>
+      </li>
+    `).join('');
+  }
+
+  function downloadCsv() {
+    const header = 'numero,n_estimado,latitud,longitud,precision_m,hora\n';
+    const rows = readings.map(r =>
+      [r.num, r.n, r.geo ? r.geo.lat : '', r.geo ? r.geo.lon : '', r.geo ? Math.round(r.geo.acc) : '', r.time].join(',')
+    ).join('\n');
+    const blob = new Blob([header + rows], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mediciones-n-tester.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  exportBtn.addEventListener('click', downloadCsv);
+
+  const clearBtn = document.getElementById('clearBtn');
+  clearBtn.addEventListener('click', () => {
+    if (!confirm('¿Borrar las ' + readings.length + ' mediciones guardadas? Esto no se puede deshacer.')) return;
+    readings = [];
+    saveReadings();
+    renderLog();
+  });
+
+  // Mostrar historial guardado apenas abre la app, sin esperar conexión
+  renderLog();
+  if (readings.length) {
+    countEl.textContent = readingCount + (readingCount === 1 ? ' lectura guardada' : ' lecturas guardadas');
+  }
+
+  // Registrar el service worker para que la app funcione offline y sea instalable
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+
+  async function displayReading(v11, v12) {
+    const n = estimateN(v11, v12);
+    if (n === null) return;
+
+    readingCount++;
+    placeholder.style.display = 'none';
+    nValue.style.display = 'block';
+    nLabel.style.display = 'block';
+    nValue.textContent = Math.round(n);
+
+    circle.classList.add('flash');
+    setTimeout(() => circle.classList.remove('flash'), 250);
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    lastTime.textContent = 'Última lectura: ' + timeStr;
+    countEl.textContent = readingCount + (readingCount === 1 ? ' lectura tomada' : ' lecturas tomadas');
+
+    const geo = await getLocation();
+    readings.unshift({ num: readingCount, n: Math.round(n), geo, time: timeStr });
+    saveReadings();
+    renderLog();
+  }
+
+  async function pollLoop() {
+    if (!char11 || !char12) return;
+    try {
+      const dv11 = await char11.readValue();
+      const dv12 = await char12.readValue();
+      const v11 = dv11.getFloat32(0, true);
+      const v12 = dv12.getFloat32(0, true);
+
+      const stable = prevPoll11 !== null &&
+        Math.abs(v11 - prevPoll11) < STABLE_EPS &&
+        Math.abs(v12 - prevPoll12) < STABLE_EPS;
+
+      const isNew = lastCaptured11 === null ||
+        Math.abs(v11 - lastCaptured11) > CHANGE_EPS ||
+        Math.abs(v12 - lastCaptured12) > CHANGE_EPS;
+
+      if (stable && isNew) {
+        lastCaptured11 = v11;
+        lastCaptured12 = v12;
+        await displayReading(v11, v12);
+        statusText.textContent = 'Lectura capturada';
+        statusDot.classList.remove('waiting');
+        setTimeout(() => {
+          statusText.textContent = 'Esperando la próxima...';
+          statusDot.classList.add('waiting');
+        }, 1200);
+      }
+
+      prevPoll11 = v11;
+      prevPoll12 = v12;
+    } catch (e) {
+      // lectura fallida puntual, se reintenta en el próximo ciclo
+    }
+  }
+
+  async function connect() {
+    clearError();
+    if (!navigator.bluetooth) {
+      showError('Este navegador no soporta Web Bluetooth. Usá Chrome en Android.');
+      return;
+    }
+
+    try {
+      connectBtn.disabled = true;
+      connectBtn.textContent = 'Buscando...';
+
+      const device = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: SERVICE_UUIDS
+      });
+
+      device.addEventListener('gattserverdisconnected', () => {
+        if (pollTimer) clearInterval(pollTimer);
+        showError('El sensor se desconectó. Recargá la página para reconectar.');
+        connectBtn.disabled = false;
+        connectBtn.textContent = 'Conectar sensor';
+        stage.classList.remove('show');
+      });
+
+      connectBtn.textContent = 'Conectando...';
+      const server = await device.gatt.connect();
+      const services = await server.getPrimaryServices();
+
+      for (const service of services) {
+        let chars;
+        try { chars = await service.getCharacteristics(); } catch (e) { continue; }
+        for (const c of chars) {
+          if (c.uuid === CH_11) char11 = c;
+          if (c.uuid === CH_12) char12 = c;
+        }
+      }
+
+      if (!char11 || !char12) {
+        showError('No se encontraron las características esperadas en este sensor.');
+        connectBtn.disabled = false;
+        connectBtn.textContent = 'Conectar sensor';
+        return;
+      }
+
+      connectBtn.style.display = 'none';
+      stage.classList.add('show');
+      pollTimer = setInterval(pollLoop, 400);
+
+    } catch (err) {
+      connectBtn.disabled = false;
+      connectBtn.textContent = 'Conectar sensor';
+      if (err.name === 'NotFoundError') return;
+      showError('No se pudo conectar: ' + err.message);
+    }
+  }
+
+  connectBtn.addEventListener('click', connect);
+</script>
+</body>
+</html>

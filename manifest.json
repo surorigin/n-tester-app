@@ -1,0 +1,14 @@
+{
+  "name": "N-Tester Lectura",
+  "short_name": "N-Tester",
+  "description": "Lectura automática y georeferenciada del Yara N-Tester BT",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#14110d",
+  "theme_color": "#14110d",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
