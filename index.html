@@ -51,9 +51,10 @@
   .btn:active { transform: scale(0.97); }
   .btn:disabled { background: #8a7433; }
   .btn:focus-visible { outline: 2px solid var(--wheat); outline-offset: 3px; }
-
-  .btn-outline {
-    background: none; border: 1px solid var(--err); color: #e8b3a5;
+  .btn-outline { background: none; border: 1px solid var(--err); color: #e8b3a5; }
+  .btn-secondary {
+    background: var(--surface-raised); color: var(--wheat); border: 1px solid var(--line);
+    font-size: 13.5px; padding: 11px 16px;
   }
 
   .error-box {
@@ -63,11 +64,7 @@
   }
   .error-box.show { display: block; }
 
-  /* Formulario de nueva sesión */
-  .session-form {
-    display: none;
-    width: 100%; flex-direction: column; gap: 12px;
-  }
+  .session-form { display: none; width: 100%; flex-direction: column; gap: 12px; }
   .session-form.show { display: flex; }
   .field label {
     display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
@@ -80,23 +77,40 @@
   }
   .field input:focus { outline: 2px solid var(--wheat); border-color: var(--wheat); }
 
-  /* Header de sesión activa */
+  /* Límite de lote */
+  .boundary-box {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px;
+  }
+  .boundary-box label {
+    display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-dim); margin-bottom: 10px;
+  }
+  .boundary-status { font-size: 12.5px; color: var(--text-dim); margin-bottom: 10px; }
+  .boundary-status.ok { color: var(--ok); }
+  .boundary-actions { display: flex; gap: 8px; }
+  .boundary-actions .btn-secondary { flex: 1; }
+  .file-hidden { display: none; }
+
+  .draw-panel {
+    display: none; width: 100%; flex-direction: column; gap: 10px; margin-top: 10px;
+  }
+  .draw-panel.show { display: flex; }
+  #drawMap { width: 100%; height: 220px; border-radius: 10px; overflow: hidden; }
+  .draw-hint { font-size: 11.5px; color: var(--text-dim); text-align: center; }
+  .draw-actions { display: flex; gap: 8px; }
+  .draw-actions .btn-secondary { flex: 1; }
+
   .session-header {
     display: none; width: 100%; background: var(--surface); border: 1px solid var(--wheat);
     border-radius: 14px; padding: 14px 16px; margin-bottom: 20px;
   }
   .session-header.show { display: block; }
-  .session-header .campo-lote {
-    font-family: 'Fraunces', serif; font-weight: 600; font-size: 17px; margin-bottom: 2px;
-  }
+  .session-header .campo-lote { font-family: 'Fraunces', serif; font-weight: 600; font-size: 17px; margin-bottom: 2px; }
   .session-header .session-meta { font-size: 11.5px; color: var(--text-dim); }
   .session-header .finish-row { margin-top: 12px; }
 
-  .stage {
-    display: none;
-    width: 100%; flex-direction: column; align-items: center;
-    margin-top: 8px;
-  }
+  .stage { display: none; width: 100%; flex-direction: column; align-items: center; margin-top: 8px; }
   .stage.show { display: flex; }
 
   .status-line {
@@ -115,14 +129,11 @@
   }
   .reading-circle.flash { transform: scale(1.04); border-color: var(--wheat); }
 
-  .n-value {
-    font-size: 68px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums;
-  }
+  .n-value { font-size: 68px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
   .n-label { font-size: 12px; color: var(--text-dim); letter-spacing: 0.1em; margin-top: 8px; text-transform: uppercase; }
   .n-placeholder { color: var(--text-dim); font-size: 15px; text-align: center; padding: 0 30px; line-height: 1.5; }
 
   .last-time { font-size: 12px; color: var(--text-dim); margin-top: 18px; }
-
   .count { font-size: 13px; color: var(--text-dim); margin-top: 6px; }
 
   .footnote {
@@ -137,7 +148,7 @@
   .log-header {
     display: flex; justify-content: space-between; align-items: center;
     font-size: 12px; color: var(--text-dim); text-transform: uppercase;
-    letter-spacing: 0.06em; margin-bottom: 10px;
+    letter-spacing: 0.06em; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;
   }
   .btn-export {
     background: none; border: 1px solid var(--line); color: var(--wheat);
@@ -153,36 +164,31 @@
   .log-num { color: var(--wheat); font-weight: 700; min-width: 22px; }
   .log-n { font-weight: 700; }
   .log-geo { color: var(--text-dim); font-size: 11px; font-variant-numeric: tabular-nums; }
-  .log-del {
-    background: none; border: none; color: var(--err); font-size: 17px;
-    cursor: pointer; padding: 0 2px 0 8px; line-height: 1;
-  }
+  .log-del { background: none; border: none; color: var(--err); font-size: 17px; cursor: pointer; padding: 0 2px 0 8px; line-height: 1; }
 
   .map-wrap {
     width: 100%; margin-top: 16px; background: var(--surface);
     border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px 16px;
   }
-  #mapView {
-    width: 100%; height: 260px; border-radius: 10px; overflow: hidden;
-    background: var(--surface-raised);
+  #mapView { width: 100%; height: 260px; border-radius: 10px; overflow: hidden; background: var(--surface-raised); }
+  .map-legend {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 10px; gap: 4px;
   }
+  .map-legend .swatch { flex: 1; height: 8px; }
+  .map-legend .swatch:first-child { border-radius: 4px 0 0 4px; }
+  .map-legend .swatch:last-child { border-radius: 0 4px 4px 0; }
+  .map-legend-labels { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-dim); margin-top: 4px; }
   .leaflet-popup-content-wrapper { background: var(--surface-raised); color: var(--text); border-radius: 8px; }
   .leaflet-popup-tip { background: var(--surface-raised); }
   .leaflet-popup-content { font-family: 'Space Grotesk', sans-serif; font-size: 12.5px; margin: 8px 10px; }
 
-  /* Sesiones guardadas */
   .past-sessions { width: 100%; margin-top: 30px; }
-  .past-sessions h2 {
-    font-family: 'Fraunces', serif; font-size: 15px; font-weight: 600;
-    color: var(--text-dim); margin-bottom: 10px;
-  }
-  .past-item {
-    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
-    padding: 12px 14px; margin-bottom: 10px;
-  }
+  .past-sessions h2 { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 600; color: var(--text-dim); margin-bottom: 10px; }
+  .past-item { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
   .past-item .pi-title { font-weight: 600; font-size: 14px; }
   .past-item .pi-meta { font-size: 11.5px; color: var(--text-dim); margin: 3px 0 10px; }
-  .past-item .pi-actions { display: flex; gap: 8px; }
+  .past-item .pi-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 </style>
 </head>
 <body>
@@ -190,7 +196,6 @@
   <div class="eyebrow">Yara N-Tester</div>
   <h1>Lectura automática</h1>
 
-  <!-- Formulario para iniciar una sesión nueva -->
   <div class="session-form" id="sessionForm">
     <div class="field">
       <label for="campoInput">Campo</label>
@@ -200,6 +205,26 @@
       <label for="loteInput">Lote</label>
       <input type="text" id="loteInput" placeholder="Ej: Lote 4">
     </div>
+
+    <div class="boundary-box">
+      <label>Límite del lote (opcional)</label>
+      <div class="boundary-status" id="boundaryStatus">Sin límite cargado</div>
+      <div class="boundary-actions">
+        <button type="button" class="btn-secondary" id="importKmlBtn">Importar KML</button>
+        <button type="button" class="btn-secondary" id="drawBoundaryBtn">Dibujar en mapa</button>
+      </div>
+      <input type="file" id="kmlInput" class="file-hidden" accept=".kml">
+
+      <div class="draw-panel" id="drawPanel">
+        <div id="drawMap"></div>
+        <div class="draw-hint">Tocá el mapa para marcar cada vértice del límite</div>
+        <div class="draw-actions">
+          <button type="button" class="btn-secondary" id="undoPointBtn">Deshacer punto</button>
+          <button type="button" class="btn-secondary" id="finishDrawBtn">Finalizar límite</button>
+        </div>
+      </div>
+    </div>
+
     <button class="btn" id="startSessionBtn">Iniciar sesión</button>
   </div>
 
@@ -208,7 +233,6 @@
     <div id="pastSessionsList"></div>
   </div>
 
-  <!-- Header de sesión activa -->
   <div class="session-header" id="sessionHeader">
     <div class="campo-lote" id="sessionTitle">—</div>
     <div class="session-meta" id="sessionMeta">—</div>
@@ -240,15 +264,17 @@
     <div class="log-header">
       <span>Mediciones</span>
       <div style="display:flex; gap:8px;">
-        <button class="btn-export" id="exportBtn">Exportar CSV</button>
+        <button class="btn-export" id="exportCsvBtn">CSV</button>
+        <button class="btn-export" id="exportKmlBtn">KML</button>
       </div>
     </div>
     <ul class="log-list" id="logList"></ul>
   </div>
 
   <div class="map-wrap" id="mapWrap" style="display:none;">
-    <div class="log-header"><span>Mapa de lecturas</span></div>
+    <div class="log-header"><span id="mapTitle">Mapa de lecturas</span></div>
     <div id="mapView"></div>
+    <div class="map-legend" id="mapLegend" style="display:none;"></div>
   </div>
 
   <div class="footnote">
@@ -270,8 +296,11 @@
   const countEl = document.getElementById('count');
   const logWrap = document.getElementById('logWrap');
   const logList = document.getElementById('logList');
-  const exportBtn = document.getElementById('exportBtn');
+  const exportCsvBtn = document.getElementById('exportCsvBtn');
+  const exportKmlBtn = document.getElementById('exportKmlBtn');
   const mapWrap = document.getElementById('mapWrap');
+  const mapTitle = document.getElementById('mapTitle');
+  const mapLegend = document.getElementById('mapLegend');
   const sessionForm = document.getElementById('sessionForm');
   const campoInput = document.getElementById('campoInput');
   const loteInput = document.getElementById('loteInput');
@@ -282,6 +311,13 @@
   const finishSessionBtn = document.getElementById('finishSessionBtn');
   const pastSessions = document.getElementById('pastSessions');
   const pastSessionsList = document.getElementById('pastSessionsList');
+  const boundaryStatus = document.getElementById('boundaryStatus');
+  const importKmlBtn = document.getElementById('importKmlBtn');
+  const kmlInput = document.getElementById('kmlInput');
+  const drawBoundaryBtn = document.getElementById('drawBoundaryBtn');
+  const drawPanel = document.getElementById('drawPanel');
+  const undoPointBtn = document.getElementById('undoPointBtn');
+  const finishDrawBtn = document.getElementById('finishDrawBtn');
 
   const SERVICE_UUIDS = [
     '0000180a-0000-1000-8000-00805f9b34fb',
@@ -302,20 +338,18 @@
   let pollTimer = null;
   let prevPoll11 = null, prevPoll12 = null;
   let lastCaptured11 = null, lastCaptured12 = null;
-  const STABLE_EPS = 0.01;      // dos sondeos consecutivos casi iguales = lectura asentada
-  const CHANGE_EPS = 1.0;       // diferencia mínima contra la última captura para contar como lectura nueva
+  const STABLE_EPS = 0.01;
+  const CHANGE_EPS = 1.0;
 
   // --- Sesiones ---
   const ACTIVE_KEY = 'ntester_active_session';
   const SESSIONS_KEY = 'ntester_sessions';
   let activeSession = loadActive();
   let sessions = loadSessions();
+  let pendingBoundary = null; // [[lat,lon], ...] antes de iniciar sesión
 
   function loadActive() {
-    try {
-      const raw = localStorage.getItem(ACTIVE_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) { return null; }
+    try { const raw = localStorage.getItem(ACTIVE_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
   }
   function saveActive() {
     try {
@@ -324,22 +358,13 @@
     } catch (e) {}
   }
   function loadSessions() {
-    try {
-      const raw = localStorage.getItem(SESSIONS_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) { return []; }
+    try { const raw = localStorage.getItem(SESSIONS_KEY); return raw ? JSON.parse(raw) : []; } catch (e) { return []; }
   }
-  function saveSessions() {
-    try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions)); } catch (e) {}
-  }
+  function saveSessions() { try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions)); } catch (e) {} }
 
-  function showError(msg) {
-    errorBox.textContent = msg;
-    errorBox.classList.add('show');
-  }
+  function showError(msg) { errorBox.textContent = msg; errorBox.classList.add('show'); }
   function clearError() { errorBox.classList.remove('show'); }
 
-  // Sonido corto al capturar una lectura (sin archivos externos, generado en el momento)
   function playBeep() {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -350,29 +375,20 @@
       gain.gain.setValueAtTime(0.0001, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
       gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.2);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(); osc.stop(ctx.currentTime + 0.2);
       osc.onended = () => ctx.close();
     } catch (e) {}
   }
 
-  // Mantener la pantalla encendida mientras hay una sesión activa
   let wakeLock = null;
   async function requestWakeLock() {
     if (!('wakeLock' in navigator)) return;
-    try {
-      wakeLock = await navigator.wakeLock.request('screen');
-    } catch (e) {}
+    try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
   }
-  function releaseWakeLock() {
-    if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
-  }
+  function releaseWakeLock() { if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; } }
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && activeSession && !wakeLock) {
-      requestWakeLock();
-    }
+    if (document.visibilityState === 'visible' && activeSession && !wakeLock) requestWakeLock();
   });
 
   function estimateN(v11, v12) {
@@ -384,17 +400,108 @@
     return new Promise((resolve) => {
       if (!navigator.geolocation) { resolve(null); return; }
       navigator.geolocation.getCurrentPosition(
-        pos => resolve({
-          lat: pos.coords.latitude,
-          lon: pos.coords.longitude,
-          acc: pos.coords.accuracy
-        }),
+        pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }),
         () => resolve(null),
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 3000 }
       );
     });
   }
 
+  function slug(s) {
+    return (s || 'sesion').toString().trim().toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'sesion';
+  }
+
+  // --- KML: importar límite ---
+  function parseKmlBoundary(text) {
+    try {
+      const doc = new DOMParser().parseFromString(text, 'text/xml');
+      const coordsNode = doc.querySelector('Polygon coordinates, LinearRing coordinates, coordinates');
+      if (!coordsNode) return null;
+      const raw = coordsNode.textContent.trim();
+      const pts = raw.split(/\s+/).map(pair => {
+        const [lon, lat] = pair.split(',').map(Number);
+        return [lat, lon];
+      }).filter(p => !isNaN(p[0]) && !isNaN(p[1]));
+      return pts.length >= 3 ? pts : null;
+    } catch (e) { return null; }
+  }
+
+  importKmlBtn.addEventListener('click', () => kmlInput.click());
+  kmlInput.addEventListener('change', () => {
+    const file = kmlInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const boundary = parseKmlBoundary(reader.result);
+      if (!boundary) {
+        showError('No se pudo leer un polígono válido de ese KML.');
+        return;
+      }
+      clearError();
+      pendingBoundary = boundary;
+      boundaryStatus.textContent = `Límite importado (${boundary.length} puntos)`;
+      boundaryStatus.classList.add('ok');
+      drawPanel.classList.remove('show');
+    };
+    reader.readAsText(file);
+    kmlInput.value = '';
+  });
+
+  // --- Dibujar límite tocando el mapa ---
+  let drawMapInstance = null, drawPolygon = null, drawMarkers = [], drawPoints = [];
+
+  drawBoundaryBtn.addEventListener('click', () => {
+    drawPanel.classList.add('show');
+    drawPoints = [];
+    if (!drawMapInstance) {
+      drawMapInstance = L.map('drawMap');
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19, attribution: 'Tiles © Esri'
+      }).addTo(drawMapInstance);
+      drawMapInstance.setView([-37.32, -59.13], 15); // Tandil, aproximado, se ajusta abajo
+      drawMapInstance.on('click', e => {
+        drawPoints.push([e.latlng.lat, e.latlng.lng]);
+        redrawDrawMap();
+      });
+    }
+    setTimeout(() => {
+      drawMapInstance.invalidateSize();
+      navigator.geolocation && navigator.geolocation.getCurrentPosition(
+        pos => drawMapInstance.setView([pos.coords.latitude, pos.coords.longitude], 17),
+        () => {}
+      );
+    }, 150);
+  });
+
+  function redrawDrawMap() {
+    drawMarkers.forEach(m => drawMapInstance.removeLayer(m));
+    drawMarkers = drawPoints.map(p => L.circleMarker(p, { radius: 5, color: '#fff', fillColor: '#c9a13b', fillOpacity: 1, weight: 2 }).addTo(drawMapInstance));
+    if (drawPolygon) drawMapInstance.removeLayer(drawPolygon);
+    if (drawPoints.length >= 2) {
+      drawPolygon = L.polygon(drawPoints, { color: '#c9a13b', fillOpacity: 0.12 }).addTo(drawMapInstance);
+    }
+  }
+
+  undoPointBtn.addEventListener('click', () => {
+    drawPoints.pop();
+    redrawDrawMap();
+  });
+
+  finishDrawBtn.addEventListener('click', () => {
+    if (drawPoints.length < 3) {
+      showError('Marcá al menos 3 puntos para cerrar el límite.');
+      return;
+    }
+    clearError();
+    pendingBoundary = drawPoints.slice();
+    boundaryStatus.textContent = `Límite dibujado (${pendingBoundary.length} puntos)`;
+    boundaryStatus.classList.add('ok');
+    drawPanel.classList.remove('show');
+  });
+
+  // --- Historial y mapa de la sesión activa ---
   function renderLog() {
     const readings = activeSession ? activeSession.readings : [];
     logWrap.style.display = readings.length ? 'block' : 'none';
@@ -418,46 +525,149 @@
     renderMap();
   }
 
-  let mapInstance = null;
-  let markersLayer = null;
+  let mapInstance = null, markersLayer = null, boundaryLayer = null, heatLayer = null;
+  let viewedSession = null; // sesión pasada que se está mirando en el mapa, si no hay sesión activa
+
+  const ZONE_COLORS = ['#b5432f', '#d97a3f', '#e8c93a', '#9fbf4a', '#4f9d4f']; // rojo -> verde
 
   function ensureMap() {
     if (mapInstance) return;
     mapInstance = L.map('mapView', { attributionControl: false });
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19,
-      attribution: 'Tiles © Esri'
+      maxZoom: 19, attribution: 'Tiles © Esri'
     }).addTo(mapInstance);
     L.control.attribution({ prefix: false }).addAttribution('Tiles © Esri').addTo(mapInstance);
+    heatLayer = L.layerGroup().addTo(mapInstance);
+    boundaryLayer = L.layerGroup().addTo(mapInstance);
     markersLayer = L.layerGroup().addTo(mapInstance);
   }
 
+  // Punto dentro de polígono (ray casting), coords como [lat, lon]
+  function pointInPolygon(pt, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const yi = poly[i][0], xi = poly[i][1];
+      const yj = poly[j][0], xj = poly[j][1];
+      const intersect = ((yi > pt[0]) !== (yj > pt[0])) &&
+        (pt[1] < (xj - xi) * (pt[0] - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  // Distancia aproximada en metros entre dos puntos lat/lon cercanos
+  function metersDist(lat1, lon1, lat2, lon2) {
+    const latAvg = (lat1 + lat2) / 2 * Math.PI / 180;
+    const dx = (lon2 - lon1) * Math.cos(latAvg) * 111320;
+    const dy = (lat2 - lat1) * 111320;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function idwValue(lat, lon, points) {
+    let wSum = 0, vSum = 0;
+    for (const p of points) {
+      const d = metersDist(lat, lon, p.lat, p.lon);
+      if (d < 0.5) return p.n; // coincide casi exacto con un punto medido
+      const w = 1 / Math.pow(d, 2);
+      wSum += w;
+      vSum += w * p.n;
+    }
+    return wSum > 0 ? vSum / wSum : null;
+  }
+
+  function renderZoneMap(readingsWithGeo, boundary) {
+    heatLayer.clearLayers();
+    mapLegend.style.display = 'none';
+    if (!boundary || boundary.length < 3 || readingsWithGeo.length < 3) return;
+
+    const points = readingsWithGeo.map(r => ({ lat: r.geo.lat, lon: r.geo.lon, n: r.n }));
+    const lats = boundary.map(p => p[0]), lons = boundary.map(p => p[1]);
+    const latMin = Math.min(...lats), latMax = Math.max(...lats);
+    const lonMin = Math.min(...lons), lonMax = Math.max(...lons);
+
+    const cols = 28;
+    const aspect = (latMax - latMin) / (lonMax - lonMin || 1);
+    const rows = Math.max(10, Math.min(40, Math.round(cols * aspect)));
+    const cellLat = (latMax - latMin) / rows;
+    const cellLon = (lonMax - lonMin) / cols;
+
+    const cells = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cLat = latMin + (r + 0.5) * cellLat;
+        const cLon = lonMin + (c + 0.5) * cellLon;
+        if (!pointInPolygon([cLat, cLon], boundary)) continue;
+        const val = idwValue(cLat, cLon, points);
+        if (val === null) continue;
+        cells.push({ r, c, val, cLat, cLon });
+      }
+    }
+    if (!cells.length) return;
+
+    const values = cells.map(c => c.val);
+    const vMin = Math.min(...values), vMax = Math.max(...values);
+    const span = (vMax - vMin) || 1;
+
+    cells.forEach(cell => {
+      let idx = Math.floor((cell.val - vMin) / span * 5);
+      if (idx > 4) idx = 4;
+      if (idx < 0) idx = 0;
+      const bounds = [
+        [cell.cLat - cellLat / 2, cell.cLon - cellLon / 2],
+        [cell.cLat + cellLat / 2, cell.cLon + cellLon / 2]
+      ];
+      L.rectangle(bounds, {
+        color: ZONE_COLORS[idx], weight: 0, fillColor: ZONE_COLORS[idx], fillOpacity: 0.55
+      }).addTo(heatLayer);
+    });
+
+    mapLegend.style.display = 'block';
+    mapLegend.innerHTML = `
+      <div style="display:flex; gap:2px;">
+        ${ZONE_COLORS.map(c => `<div class="swatch" style="background:${c}"></div>`).join('')}
+      </div>
+      <div class="map-legend-labels">
+        <span>${Math.round(vMin)} (bajo)</span><span>${Math.round((vMin + vMax) / 2)}</span><span>${Math.round(vMax)} (alto)</span>
+      </div>
+    `;
+  }
+
   function renderMap() {
-    const readings = activeSession ? activeSession.readings : [];
+    const session = activeSession || viewedSession;
+    const readings = session ? session.readings : [];
     const withGeo = readings.filter(r => r.geo);
-    mapWrap.style.display = withGeo.length ? 'block' : 'none';
-    if (!withGeo.length) return;
+    const boundary = session ? session.boundary : null;
+    mapWrap.style.display = (withGeo.length || (boundary && boundary.length)) ? 'block' : 'none';
+    if (!withGeo.length && !(boundary && boundary.length)) return;
+
+    mapTitle.textContent = session && !activeSession
+      ? `Mapa · ${session.campo} · ${session.lote}`
+      : 'Mapa de lecturas';
 
     ensureMap();
     markersLayer.clearLayers();
+    boundaryLayer.clearLayers();
 
     const bounds = [];
+    if (boundary && boundary.length >= 3) {
+      L.polygon(boundary, { color: '#c9a13b', weight: 2, fillOpacity: 0 }).addTo(boundaryLayer);
+      boundary.forEach(p => bounds.push(p));
+    }
     withGeo.forEach(r => {
-      const marker = L.circleMarker([r.geo.lat, r.geo.lon], {
-        radius: 8, color: '#ffffff', fillColor: '#c9a13b', fillOpacity: 0.9, weight: 2
-      }).bindPopup(`#${r.num} · N≈${r.n}<br>${r.time}`);
-      marker.addTo(markersLayer);
+      L.circleMarker([r.geo.lat, r.geo.lon], {
+        radius: 7, color: '#ffffff', fillColor: '#14110d', fillOpacity: 0.85, weight: 2
+      }).bindPopup(`#${r.num} · N≈${r.n}<br>${r.time}`).addTo(markersLayer);
       bounds.push([r.geo.lat, r.geo.lon]);
     });
 
-    if (bounds.length === 1) {
-      mapInstance.setView(bounds[0], 17);
-    } else {
-      mapInstance.fitBounds(bounds, { padding: [24, 24] });
-    }
+    renderZoneMap(withGeo, boundary);
+
+    if (bounds.length === 1) mapInstance.setView(bounds[0], 17);
+    else if (bounds.length > 1) mapInstance.fitBounds(bounds, { padding: [24, 24] });
     setTimeout(() => mapInstance.invalidateSize(), 100);
   }
 
+  // --- Exportar ---
   function csvFor(session) {
     const header = 'numero,n_estimado,latitud,longitud,precision_m,hora\n';
     const rows = session.readings.map(r =>
@@ -466,25 +676,50 @@
     return header + rows;
   }
 
-  function slug(s) {
-    return (s || 'sesion').toString().trim().toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'sesion';
+  function kmlFor(session) {
+    const placemarks = session.readings.filter(r => r.geo).map(r => `
+    <Placemark>
+      <name>#${r.num} N≈${r.n}</name>
+      <description>${r.time}</description>
+      <Point><coordinates>${r.geo.lon},${r.geo.lat},0</coordinates></Point>
+    </Placemark>`).join('');
+
+    let boundaryKml = '';
+    if (session.boundary && session.boundary.length >= 3) {
+      const coords = session.boundary.map(p => `${p[1]},${p[0]},0`).join(' ') + ` ${session.boundary[0][1]},${session.boundary[0][0]},0`;
+      boundaryKml = `
+    <Placemark>
+      <name>Límite del lote</name>
+      <Style><PolyStyle><color>4dc9a13b</color></PolyStyle><LineStyle><color>ffc9a13b</color><width>2</width></LineStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>${coords}</coordinates></LinearRing></outerBoundaryIs></Polygon>
+    </Placemark>`;
+    }
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${session.campo} - ${session.lote}</name>
+    ${boundaryKml}
+    ${placemarks}
+  </Document>
+</kml>`;
   }
 
-  function downloadCsv(session, filename) {
-    const blob = new Blob([csvFor(session)], { type: 'text/csv' });
+  function downloadFile(content, filename, mime) {
+    const blob = new Blob([content], { type: mime });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
+    a.href = url; a.download = filename; a.click();
     URL.revokeObjectURL(url);
   }
 
-  exportBtn.addEventListener('click', () => {
+  exportCsvBtn.addEventListener('click', () => {
     if (!activeSession) return;
-    downloadCsv(activeSession, `${slug(activeSession.campo)}_${slug(activeSession.lote)}_en-curso.csv`);
+    downloadFile(csvFor(activeSession), `${slug(activeSession.campo)}_${slug(activeSession.lote)}_en-curso.csv`, 'text/csv');
+  });
+  exportKmlBtn.addEventListener('click', () => {
+    if (!activeSession) return;
+    downloadFile(kmlFor(activeSession), `${slug(activeSession.campo)}_${slug(activeSession.lote)}_en-curso.kml`, 'application/vnd.google-earth.kml+xml');
   });
 
   // --- Flujo de sesión ---
@@ -496,7 +731,8 @@
       connectBtn.style.display = 'block';
       sessionTitle.textContent = `${activeSession.campo} · ${activeSession.lote}`;
       const start = new Date(activeSession.startTime);
-      sessionMeta.textContent = 'Iniciada ' + start.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      sessionMeta.textContent = 'Iniciada ' + start.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+        + (activeSession.boundary ? ` · límite cargado` : '');
       countEl.textContent = activeSession.readings.length
         ? activeSession.readings.length + (activeSession.readings.length === 1 ? ' lectura guardada' : ' lecturas guardadas')
         : '';
@@ -507,6 +743,10 @@
       stage.classList.remove('show');
       logWrap.style.display = 'none';
       mapWrap.style.display = 'none';
+      boundaryStatus.textContent = 'Sin límite cargado';
+      boundaryStatus.classList.remove('ok');
+      pendingBoundary = null;
+      drawPanel.classList.remove('show');
       renderPastSessions();
     }
   }
@@ -519,19 +759,37 @@
       return `
         <div class="past-item" data-id="${s.id}">
           <div class="pi-title">${s.campo} · ${s.lote}</div>
-          <div class="pi-meta">${dateStr} — ${s.readings.length} ${s.readings.length === 1 ? 'lectura' : 'lecturas'}</div>
+          <div class="pi-meta">${dateStr} — ${s.readings.length} ${s.readings.length === 1 ? 'lectura' : 'lecturas'}${s.boundary ? ' · con límite' : ''}</div>
           <div class="pi-actions">
-            <button class="btn-export pi-export" data-id="${s.id}">Exportar CSV</button>
+            <button class="btn-export pi-map" data-id="${s.id}">Ver mapa</button>
+            <button class="btn-export pi-csv" data-id="${s.id}">CSV</button>
+            <button class="btn-export pi-kml" data-id="${s.id}">KML</button>
             <button class="btn-export pi-delete" data-id="${s.id}" style="color:#e8b3a5; border-color: var(--err);">Borrar</button>
           </div>
         </div>
       `;
     }).join('');
 
-    pastSessionsList.querySelectorAll('.pi-export').forEach(btn => {
+    pastSessionsList.querySelectorAll('.pi-map').forEach(btn => {
       btn.addEventListener('click', () => {
         const s = sessions.find(x => x.id === btn.dataset.id);
-        if (s) downloadCsv(s, `${slug(s.campo)}_${slug(s.lote)}.csv`);
+        if (!s) return;
+        viewedSession = s;
+        renderMap();
+        mapWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    pastSessionsList.querySelectorAll('.pi-csv').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const s = sessions.find(x => x.id === btn.dataset.id);
+        if (s) downloadFile(csvFor(s), `${slug(s.campo)}_${slug(s.lote)}.csv`, 'text/csv');
+      });
+    });
+    pastSessionsList.querySelectorAll('.pi-kml').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const s = sessions.find(x => x.id === btn.dataset.id);
+        if (s) downloadFile(kmlFor(s), `${slug(s.campo)}_${slug(s.lote)}.kml`, 'application/vnd.google-earth.kml+xml');
       });
     });
     pastSessionsList.querySelectorAll('.pi-delete').forEach(btn => {
@@ -549,20 +807,18 @@
   startSessionBtn.addEventListener('click', () => {
     const campo = campoInput.value.trim();
     const lote = loteInput.value.trim();
-    if (!campo || !lote) {
-      showError('Completá campo y lote antes de iniciar.');
-      return;
-    }
+    if (!campo || !lote) { showError('Completá campo y lote antes de iniciar.'); return; }
     clearError();
     activeSession = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       campo, lote,
       startTime: new Date().toISOString(),
+      boundary: pendingBoundary,
       readings: []
     };
     saveActive();
-    campoInput.value = '';
-    loteInput.value = '';
+    campoInput.value = ''; loteInput.value = ''; pendingBoundary = null;
+    viewedSession = null;
     refreshSessionUI();
     renderLog();
     requestWakeLock();
@@ -601,9 +857,7 @@
     const n = estimateN(v11, v12);
     if (n === null) return;
 
-    const num = activeSession.readings.length
-      ? Math.max(...activeSession.readings.map(r => r.num)) + 1
-      : 1;
+    const num = activeSession.readings.length ? Math.max(...activeSession.readings.map(r => r.num)) + 1 : 1;
 
     placeholder.style.display = 'none';
     nValue.style.display = 'block';
@@ -634,16 +888,12 @@
       const v12 = dv12.getFloat32(0, true);
 
       const stable = prevPoll11 !== null &&
-        Math.abs(v11 - prevPoll11) < STABLE_EPS &&
-        Math.abs(v12 - prevPoll12) < STABLE_EPS;
-
+        Math.abs(v11 - prevPoll11) < STABLE_EPS && Math.abs(v12 - prevPoll12) < STABLE_EPS;
       const isNew = lastCaptured11 === null ||
-        Math.abs(v11 - lastCaptured11) > CHANGE_EPS ||
-        Math.abs(v12 - lastCaptured12) > CHANGE_EPS;
+        Math.abs(v11 - lastCaptured11) > CHANGE_EPS || Math.abs(v12 - lastCaptured12) > CHANGE_EPS;
 
       if (stable && isNew) {
-        lastCaptured11 = v11;
-        lastCaptured12 = v12;
+        lastCaptured11 = v11; lastCaptured12 = v12;
         await displayReading(v11, v12);
         statusText.textContent = 'Lectura capturada';
         statusDot.classList.remove('waiting');
@@ -653,32 +903,20 @@
         }, 1200);
       }
 
-      prevPoll11 = v11;
-      prevPoll12 = v12;
-    } catch (e) {
-      // lectura fallida puntual, se reintenta en el próximo ciclo
-    }
+      prevPoll11 = v11; prevPoll12 = v12;
+    } catch (e) {}
   }
 
   async function connect() {
     clearError();
-    if (!activeSession) {
-      showError('Iniciá una sesión (campo y lote) antes de conectar el sensor.');
-      return;
-    }
-    if (!navigator.bluetooth) {
-      showError('Este navegador no soporta Web Bluetooth. Usá Chrome en Android.');
-      return;
-    }
+    if (!activeSession) { showError('Iniciá una sesión (campo y lote) antes de conectar el sensor.'); return; }
+    if (!navigator.bluetooth) { showError('Este navegador no soporta Web Bluetooth. Usá Chrome en Android.'); return; }
 
     try {
       connectBtn.disabled = true;
       connectBtn.textContent = 'Buscando...';
 
-      const device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: SERVICE_UUIDS
-      });
+      const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: SERVICE_UUIDS });
 
       device.addEventListener('gattserverdisconnected', () => {
         if (pollTimer) clearInterval(pollTimer);
@@ -723,18 +961,11 @@
 
   connectBtn.addEventListener('click', connect);
 
-  // Estado inicial al abrir la app
   refreshSessionUI();
-  if (activeSession) {
-    renderLog();
-    requestWakeLock();
-  }
+  if (activeSession) { renderLog(); requestWakeLock(); }
 
-  // Registrar el service worker para que la app funcione offline y sea instalable
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    });
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
   }
 </script>
 </body>
