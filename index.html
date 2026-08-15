@@ -339,6 +339,42 @@
   }
   function clearError() { errorBox.classList.remove('show'); }
 
+  // Sonido corto al capturar una lectura (sin archivos externos, generado en el momento)
+  function playBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
+      osc.onended = () => ctx.close();
+    } catch (e) {}
+  }
+
+  // Mantener la pantalla encendida mientras hay una sesión activa
+  let wakeLock = null;
+  async function requestWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+    } catch (e) {}
+  }
+  function releaseWakeLock() {
+    if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && activeSession && !wakeLock) {
+      requestWakeLock();
+    }
+  });
+
   function estimateN(v11, v12) {
     if (v11 <= 0 || v12 <= 0) return null;
     return 478 * Math.log(v11 / v12) - 449;
@@ -529,6 +565,7 @@
     loteInput.value = '';
     refreshSessionUI();
     renderLog();
+    requestWakeLock();
   });
 
   finishSessionBtn.addEventListener('click', () => {
@@ -539,6 +576,7 @@
     if (pollTimer) clearInterval(pollTimer);
     char11 = null; char12 = null;
     prevPoll11 = null; prevPoll12 = null; lastCaptured11 = null; lastCaptured12 = null;
+    releaseWakeLock();
 
     activeSession.endTime = new Date().toISOString();
     sessions.push(activeSession);
@@ -574,6 +612,7 @@
 
     circle.classList.add('flash');
     setTimeout(() => circle.classList.remove('flash'), 250);
+    playBeep();
 
     const now = new Date();
     const timeStr = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -686,7 +725,10 @@
 
   // Estado inicial al abrir la app
   refreshSessionUI();
-  if (activeSession) renderLog();
+  if (activeSession) {
+    renderLog();
+    requestWakeLock();
+  }
 
   // Registrar el service worker para que la app funcione offline y sea instalable
   if ('serviceWorker' in navigator) {
