@@ -118,6 +118,10 @@
   .log-num { color: var(--wheat); font-weight: 700; min-width: 22px; }
   .log-n { font-weight: 700; }
   .log-geo { color: var(--text-dim); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .log-del {
+    background: none; border: none; color: var(--err); font-size: 17px;
+    cursor: pointer; padding: 0 2px 0 8px; line-height: 1;
+  }
 </style>
 </head>
 <body>
@@ -240,14 +244,23 @@
 
   function renderLog() {
     logWrap.style.display = readings.length ? 'block' : 'none';
-    logList.innerHTML = readings.map(r => `
+    logList.innerHTML = readings.map((r, i) => `
       <li class="log-item">
         <span class="log-num">#${r.num}</span>
         <span class="log-n">N≈${r.n}</span>
         <span class="log-geo">${r.geo ? r.geo.lat.toFixed(5) + ', ' + r.geo.lon.toFixed(5) : 'sin GPS'}</span>
         <span class="log-geo">${r.time}</span>
+        <button class="log-del" data-idx="${i}" aria-label="Borrar esta medición">×</button>
       </li>
     `).join('');
+    logList.querySelectorAll('.log-del').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = Number(btn.dataset.idx);
+        readings.splice(idx, 1);
+        saveReadings();
+        renderLog();
+      });
+    });
   }
 
   function downloadCsv() {
