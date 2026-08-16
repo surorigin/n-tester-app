@@ -136,6 +136,11 @@
   .last-time { font-size: 12px; color: var(--text-dim); margin-top: 18px; }
   .count { font-size: 13px; color: var(--text-dim); margin-top: 6px; }
 
+  .status-badge {
+    margin-top: 14px; padding: 8px 16px; border-radius: 20px;
+    font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+
   .footnote {
     margin-top: 36px; font-size: 11.5px; color: var(--text-dim);
     text-align: center; line-height: 1.6; padding: 0 8px;
@@ -207,6 +212,18 @@
     </div>
 
     <div class="boundary-box">
+      <label>Parcela de referencia — suficiencia de N (opcional)</label>
+      <div class="boundary-status" id="refStatus">Sin parcela de referencia: el mapa va a usar rangos relativos entre tus lecturas</div>
+      <div class="field" style="margin-top:2px;">
+        <label for="refCountInput" style="margin-bottom:4px;">Cantidad de lecturas a tomar ahí</label>
+        <input type="number" id="refCountInput" value="10" min="3" max="30" style="padding:10px 12px;">
+      </div>
+      <div class="boundary-actions">
+        <button type="button" class="btn-secondary" id="enableRefBtn" style="flex:none; width:100%;">Usar parcela de referencia</button>
+      </div>
+    </div>
+
+    <div class="boundary-box">
       <label>Límite del lote (opcional)</label>
       <div class="boundary-status" id="boundaryStatus">Sin límite cargado</div>
       <div class="boundary-actions">
@@ -256,6 +273,7 @@
       <div class="n-label" id="nLabel" style="display:none;">N estimado</div>
     </div>
 
+    <div class="status-badge" id="statusBadge" style="display:none;"></div>
     <div class="last-time" id="lastTime"></div>
     <div class="count" id="count"></div>
   </div>
@@ -318,6 +336,10 @@
   const drawPanel = document.getElementById('drawPanel');
   const undoPointBtn = document.getElementById('undoPointBtn');
   const finishDrawBtn = document.getElementById('finishDrawBtn');
+  const statusBadge = document.getElementById('statusBadge');
+  const refStatus = document.getElementById('refStatus');
+  const refCountInput = document.getElementById('refCountInput');
+  const enableRefBtn = document.getElementById('enableRefBtn');
 
   const SERVICE_UUIDS = [
     '0000180a-0000-1000-8000-00805f9b34fb',
@@ -347,6 +369,7 @@
   let activeSession = loadActive();
   let sessions = loadSessions();
   let pendingBoundary = null; // [[lat,lon], ...] antes de iniciar sesión
+  let pendingReferenceTarget = null; // cantidad de lecturas de referencia a tomar, si se activó
 
   function loadActive() {
     try { const raw = localStorage.getItem(ACTIVE_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
@@ -364,6 +387,21 @@
 
   function showError(msg) { errorBox.textContent = msg; errorBox.classList.add('show'); }
   function clearError() { errorBox.classList.remove('show'); }
+
+  enableRefBtn.addEventListener('click', () => {
+    if (pendingReferenceTarget) {
+      pendingReferenceTarget = null;
+      enableRefBtn.textContent = 'Usar parcela de referencia';
+      refStatus.textContent = 'Sin parcela de referencia: el mapa va a usar rangos relativos entre tus lecturas';
+      refStatus.classList.remove('ok');
+      return;
+    }
+    const count = Math.max(3, Math.min(30, parseInt(refCountInput.value, 10) || 10));
+    pendingReferenceTarget = count;
+    enableRefBtn.textContent = 'Cancelar parcela de referencia';
+    refStatus.textContent = `Vas a tomar ${count} lecturas en la parcela de referencia antes de recorrer el resto del lote`;
+    refStatus.classList.add('ok');
+  });
 
   function playBeep() {
     try {
@@ -394,6 +432,12 @@
   function estimateN(v11, v12) {
     if (v11 <= 0 || v12 <= 0) return null;
     return 478 * Math.log(v11 / v12) - 449;
+  }
+
+  function classifySI(si) {
+    if (si >= 95) return { label: 'Óptimo', color: '#4f9d4f' };
+    if (si >= 90) return { label: 'Marginal', color: '#d9a441' };
+    return { label: 'Déficit', color: '#b5432f' };
   }
 
   function getLocation() {
@@ -508,7 +552,7 @@
     logList.innerHTML = readings.map((r, i) => `
       <li class="log-item">
         <span class="log-num">#${r.num}</span>
-        <span class="log-n">N≈${r.n}</span>
+        <span class="log-n">N≈${r.n}${r.si !== null && r.si !== undefined ? ` <span style="color:${classifySI(r.si).color}">· ${r.si}%</span>` : ''}</span>
         <span class="log-geo">${r.geo ? r.geo.lat.toFixed(5) + ', ' + r.geo.lon.toFixed(5) : 'sin GPS'}</span>
         <span class="log-geo">${r.time}</span>
         <button class="log-del" data-idx="${i}" aria-label="Borrar esta medición">×</button>
@@ -575,12 +619,16 @@
     return wSum > 0 ? vSum / wSum : null;
   }
 
-  function renderZoneMap(readingsWithGeo, boundary) {
+  function renderZoneMap(readingsWithGeo, boundary, referenceAvg) {
     heatLayer.clearLayers();
     mapLegend.style.display = 'none';
     if (!boundary || boundary.length < 3 || readingsWithGeo.length < 3) return;
 
-    const points = readingsWithGeo.map(r => ({ lat: r.geo.lat, lon: r.geo.lon, n: r.n }));
+    const useSI = !!referenceAvg;
+    const points = readingsWithGeo.map(r => ({
+      lat: r.geo.lat, lon: r.geo.lon,
+      n: useSI ? (r.n / referenceAvg) * 100 : r.n
+    }));
     const lats = boundary.map(p => p[0]), lons = boundary.map(p => p[1]);
     const latMin = Math.min(...lats), latMax = Math.max(...lats);
     const lonMin = Math.min(...lons), lonMax = Math.max(...lons);
@@ -604,14 +652,43 @@
     }
     if (!cells.length) return;
 
-    const values = cells.map(c => c.val);
-    const vMin = Math.min(...values), vMax = Math.max(...values);
-    const span = (vMax - vMin) || 1;
+    let getIdx, legendHtml;
+
+    if (useSI) {
+      // Rangos agronómicos fijos de índice de suficiencia (SI), no relativos a esta sesión
+      const breaks = [80, 90, 95, 100]; // separa 5 clases: <80, 80-90, 90-95, 95-100, >=100
+      getIdx = (val) => {
+        for (let i = 0; i < breaks.length; i++) if (val < breaks[i]) return i;
+        return 4;
+      };
+      legendHtml = `
+        <div style="display:flex; gap:2px;">
+          ${ZONE_COLORS.map(c => `<div class="swatch" style="background:${c}"></div>`).join('')}
+        </div>
+        <div class="map-legend-labels">
+          <span>&lt;80% déficit</span><span>90-95% marginal</span><span>≥100% óptimo</span>
+        </div>
+      `;
+    } else {
+      const values = cells.map(c => c.val);
+      const vMin = Math.min(...values), vMax = Math.max(...values);
+      const span = (vMax - vMin) || 1;
+      getIdx = (val) => {
+        let idx = Math.floor((val - vMin) / span * 5);
+        return Math.max(0, Math.min(4, idx));
+      };
+      legendHtml = `
+        <div style="display:flex; gap:2px;">
+          ${ZONE_COLORS.map(c => `<div class="swatch" style="background:${c}"></div>`).join('')}
+        </div>
+        <div class="map-legend-labels">
+          <span>${Math.round(vMin)} (bajo)</span><span>${Math.round((vMin + vMax) / 2)}</span><span>${Math.round(vMax)} (alto)</span>
+        </div>
+      `;
+    }
 
     cells.forEach(cell => {
-      let idx = Math.floor((cell.val - vMin) / span * 5);
-      if (idx > 4) idx = 4;
-      if (idx < 0) idx = 0;
+      const idx = getIdx(cell.val);
       const bounds = [
         [cell.cLat - cellLat / 2, cell.cLon - cellLon / 2],
         [cell.cLat + cellLat / 2, cell.cLon + cellLon / 2]
@@ -622,14 +699,7 @@
     });
 
     mapLegend.style.display = 'block';
-    mapLegend.innerHTML = `
-      <div style="display:flex; gap:2px;">
-        ${ZONE_COLORS.map(c => `<div class="swatch" style="background:${c}"></div>`).join('')}
-      </div>
-      <div class="map-legend-labels">
-        <span>${Math.round(vMin)} (bajo)</span><span>${Math.round((vMin + vMax) / 2)}</span><span>${Math.round(vMax)} (alto)</span>
-      </div>
-    `;
+    mapLegend.innerHTML = legendHtml;
   }
 
   function renderMap() {
@@ -660,7 +730,7 @@
       bounds.push([r.geo.lat, r.geo.lon]);
     });
 
-    renderZoneMap(withGeo, boundary);
+    renderZoneMap(withGeo, boundary, session ? session.referenceAvg : null);
 
     if (bounds.length === 1) mapInstance.setView(bounds[0], 17);
     else if (bounds.length > 1) mapInstance.fitBounds(bounds, { padding: [24, 24] });
@@ -669,17 +739,22 @@
 
   // --- Exportar ---
   function csvFor(session) {
-    const header = 'numero,n_estimado,latitud,longitud,precision_m,hora\n';
+    const header = 'numero,n_estimado,indice_suficiencia_pct,estado,latitud,longitud,precision_m,hora\n';
     const rows = session.readings.map(r =>
-      [r.num, r.n, r.geo ? r.geo.lat : '', r.geo ? r.geo.lon : '', r.geo ? Math.round(r.geo.acc) : '', r.time].join(',')
+      [r.num, r.n, r.si !== null && r.si !== undefined ? r.si : '', r.status || '',
+       r.geo ? r.geo.lat : '', r.geo ? r.geo.lon : '', r.geo ? Math.round(r.geo.acc) : '', r.time].join(',')
     ).join('\n');
-    return header + rows;
+    let refBlock = '';
+    if (session.referenceAvg) {
+      refBlock = `\n\nparcela_referencia_promedio,${session.referenceAvg}\nparcela_referencia_lecturas,${session.referenceReadings.length}`;
+    }
+    return header + rows + refBlock;
   }
 
   function kmlFor(session) {
     const placemarks = session.readings.filter(r => r.geo).map(r => `
     <Placemark>
-      <name>#${r.num} N≈${r.n}</name>
+      <name>#${r.num} N≈${r.n}${r.si !== null && r.si !== undefined ? ` (${r.si}% · ${r.status})` : ''}</name>
       <description>${r.time}</description>
       <Point><coordinates>${r.geo.lon},${r.geo.lat},0</coordinates></Point>
     </Placemark>`).join('');
@@ -731,8 +806,14 @@
       connectBtn.style.display = 'block';
       sessionTitle.textContent = `${activeSession.campo} · ${activeSession.lote}`;
       const start = new Date(activeSession.startTime);
-      sessionMeta.textContent = 'Iniciada ' + start.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
-        + (activeSession.boundary ? ` · límite cargado` : '');
+      let metaParts = ['Iniciada ' + start.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })];
+      if (activeSession.boundary) metaParts.push('límite cargado');
+      if (activeSession.referenceTarget) {
+        metaParts.push(activeSession.referenceAvg
+          ? `referencia: N≈${activeSession.referenceAvg}`
+          : `referencia: ${activeSession.referenceReadings.length}/${activeSession.referenceTarget}`);
+      }
+      sessionMeta.textContent = metaParts.join(' · ');
       countEl.textContent = activeSession.readings.length
         ? activeSession.readings.length + (activeSession.readings.length === 1 ? ' lectura guardada' : ' lecturas guardadas')
         : '';
@@ -745,7 +826,11 @@
       mapWrap.style.display = 'none';
       boundaryStatus.textContent = 'Sin límite cargado';
       boundaryStatus.classList.remove('ok');
+      refStatus.textContent = 'Sin parcela de referencia: el mapa va a usar rangos relativos entre tus lecturas';
+      refStatus.classList.remove('ok');
+      enableRefBtn.textContent = 'Usar parcela de referencia';
       pendingBoundary = null;
+      pendingReferenceTarget = null;
       drawPanel.classList.remove('show');
       renderPastSessions();
     }
@@ -814,10 +899,16 @@
       campo, lote,
       startTime: new Date().toISOString(),
       boundary: pendingBoundary,
+      referenceTarget: pendingReferenceTarget,
+      referenceReadings: [],
+      referenceAvg: null,
       readings: []
     };
     saveActive();
-    campoInput.value = ''; loteInput.value = ''; pendingBoundary = null;
+    campoInput.value = ''; loteInput.value = ''; pendingBoundary = null; pendingReferenceTarget = null;
+    enableRefBtn.textContent = 'Usar parcela de referencia';
+    refStatus.textContent = 'Sin parcela de referencia: el mapa va a usar rangos relativos entre tus lecturas';
+    refStatus.classList.remove('ok');
     viewedSession = null;
     refreshSessionUI();
     renderLog();
@@ -844,8 +935,11 @@
     connectBtn.textContent = 'Conectar sensor';
     stage.classList.remove('show');
     placeholder.style.display = 'block';
+    placeholder.textContent = 'Bajá la pinza sobre la hoja para tomar la primera lectura';
     nValue.style.display = 'none';
     nLabel.style.display = 'none';
+    nLabel.textContent = 'N estimado';
+    statusBadge.style.display = 'none';
     lastTime.textContent = '';
     countEl.textContent = '';
 
@@ -856,13 +950,59 @@
     if (!activeSession) return;
     const n = estimateN(v11, v12);
     if (n === null) return;
+    const rounded = Math.round(n);
 
+    // --- Modo "tomando parcela de referencia" ---
+    const collectingRef = activeSession.referenceTarget && activeSession.referenceAvg === null;
+    if (collectingRef) {
+      const geo = await getLocation();
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      activeSession.referenceReadings.push({ n: rounded, geo, time: timeStr });
+
+      placeholder.style.display = 'none';
+      nValue.style.display = 'block';
+      nLabel.style.display = 'block';
+      nValue.textContent = rounded;
+      nLabel.textContent = `Referencia ${activeSession.referenceReadings.length}/${activeSession.referenceTarget}`;
+      statusBadge.style.display = 'none';
+
+      circle.classList.add('flash');
+      setTimeout(() => circle.classList.remove('flash'), 250);
+      playBeep();
+      lastTime.textContent = 'Última lectura: ' + timeStr;
+
+      if (activeSession.referenceReadings.length >= activeSession.referenceTarget) {
+        const avg = activeSession.referenceReadings.reduce((a, r) => a + r.n, 0) / activeSession.referenceReadings.length;
+        activeSession.referenceAvg = Math.round(avg);
+        nLabel.textContent = 'N estimado';
+        placeholder.textContent = 'Referencia lista. Ahora recorré el resto del lote.';
+      }
+      saveActive();
+      refreshSessionUI();
+      return;
+    }
+
+    // --- Lectura normal del lote ---
     const num = activeSession.readings.length ? Math.max(...activeSession.readings.map(r => r.num)) + 1 : 1;
 
     placeholder.style.display = 'none';
     nValue.style.display = 'block';
     nLabel.style.display = 'block';
-    nValue.textContent = Math.round(n);
+    nLabel.textContent = 'N estimado';
+    nValue.textContent = rounded;
+
+    let si = null, status = null;
+    if (activeSession.referenceAvg) {
+      si = Math.round((rounded / activeSession.referenceAvg) * 100);
+      status = classifySI(si);
+      statusBadge.style.display = 'inline-block';
+      statusBadge.textContent = `${status.label} · ${si}%`;
+      statusBadge.style.background = status.color + '26';
+      statusBadge.style.color = status.color;
+    } else {
+      statusBadge.style.display = 'none';
+    }
 
     circle.classList.add('flash');
     setTimeout(() => circle.classList.remove('flash'), 250);
@@ -873,7 +1013,7 @@
     lastTime.textContent = 'Última lectura: ' + timeStr;
 
     const geo = await getLocation();
-    activeSession.readings.unshift({ num, n: Math.round(n), geo, time: timeStr });
+    activeSession.readings.unshift({ num, n: rounded, si, status: status ? status.label : null, geo, time: timeStr });
     saveActive();
     countEl.textContent = activeSession.readings.length + (activeSession.readings.length === 1 ? ' lectura guardada' : ' lecturas guardadas');
     renderLog();
