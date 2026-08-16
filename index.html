@@ -85,6 +85,12 @@
   .field-row { display: flex; gap: 10px; }
   .field-row .field { flex: 1; }
 
+  .protocol-tip {
+    background: var(--surface); border-left: 3px solid var(--wheat); border-radius: 8px;
+    padding: 12px 14px; font-size: 12px; color: var(--text-dim); line-height: 1.6;
+  }
+  .protocol-tip strong { color: var(--wheat); font-weight: 600; }
+
   /* Límite de lote */
   .boundary-box {
     background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
@@ -247,6 +253,10 @@
       </div>
     </div>
 
+    <div class="protocol-tip">
+      <strong>Cómo medir:</strong> última hoja completamente desplegada, en la zona media del limbo, evitando la vena central y el borde. Repetí siempre el mismo lugar de la misma hoja en todas las plantas para que las lecturas sean comparables entre sí.
+    </div>
+
     <div class="boundary-box">
       <label>Parcela de referencia — suficiencia de N (opcional)</label>
       <div class="boundary-status" id="refStatus">Sin parcela de referencia: el mapa va a usar rangos relativos entre tus lecturas</div>
@@ -289,6 +299,9 @@
   <div class="session-header" id="sessionHeader">
     <div class="campo-lote" id="sessionTitle">—</div>
     <div class="session-meta" id="sessionMeta">—</div>
+    <div class="protocol-tip" style="margin-top:10px;">
+      Última hoja completamente desplegada, zona media del limbo, evitando vena central y borde. Mismo lugar en todas las plantas.
+    </div>
     <div class="finish-row">
       <button class="btn btn-outline" id="finishSessionBtn">Finalizar sesión</button>
     </div>
@@ -314,6 +327,12 @@
     <div class="count" id="count"></div>
   </div>
 
+  <div class="map-wrap" id="mapWrap" style="display:none;">
+    <div class="log-header"><span id="mapTitle">Mapa de lecturas</span></div>
+    <div id="mapView"></div>
+    <div class="map-legend" id="mapLegend" style="display:none;"></div>
+  </div>
+
   <div class="log-wrap" id="logWrap" style="display:none;">
     <div class="log-header">
       <span>Mediciones</span>
@@ -328,12 +347,6 @@
   <div class="log-wrap recal-wrap" id="recalBox" style="display:none;">
     <div class="recal-text" id="recalText"></div>
     <button class="btn-secondary" id="recalBtn" style="width:100%;">Recalibrar fórmula</button>
-  </div>
-
-  <div class="map-wrap" id="mapWrap" style="display:none;">
-    <div class="log-header"><span id="mapTitle">Mapa de lecturas</span></div>
-    <div id="mapView"></div>
-    <div class="map-legend" id="mapLegend" style="display:none;"></div>
   </div>
 
   <div class="footnote">
