@@ -844,7 +844,7 @@
       return `
         <div class="past-item" data-id="${s.id}">
           <div class="pi-title">${s.campo} · ${s.lote}</div>
-          <div class="pi-meta">${dateStr} — ${s.readings.length} ${s.readings.length === 1 ? 'lectura' : 'lecturas'}${s.boundary ? ' · con límite' : ''}</div>
+          <div class="pi-meta">${dateStr} — ${s.readings.length} ${s.readings.length === 1 ? 'lectura' : 'lecturas'}${s.boundary ? ' · con límite' : ''}${s.referenceAvg ? ` · ref. N≈${s.referenceAvg}` : ''}</div>
           <div class="pi-actions">
             <button class="btn-export pi-map" data-id="${s.id}">Ver mapa</button>
             <button class="btn-export pi-csv" data-id="${s.id}">CSV</button>
