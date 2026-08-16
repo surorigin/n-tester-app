@@ -76,6 +76,14 @@
     font-family: 'Space Grotesk', sans-serif;
   }
   .field input:focus { outline: 2px solid var(--wheat); border-color: var(--wheat); }
+  .field select {
+    width: 100%; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 13px 14px; color: var(--text); font-size: 15px;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .field select:focus { outline: 2px solid var(--wheat); border-color: var(--wheat); }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
 
   /* Límite de lote */
   .boundary-box {
@@ -160,16 +168,28 @@
     font-size: 11px; padding: 5px 10px; border-radius: 8px; cursor: pointer;
     font-family: 'Space Grotesk', sans-serif; text-transform: none; letter-spacing: normal;
   }
-  .log-list { list-style: none; max-height: 240px; overflow-y: auto; }
+  .log-list { list-style: none; max-height: 320px; overflow-y: auto; }
+  .log-item-full { border-bottom: 1px solid var(--line); padding: 9px 0; }
+  .log-item-full:last-child { border-bottom: none; }
   .log-item {
     display: flex; justify-content: space-between; align-items: baseline;
-    padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 12.5px;
+    font-size: 12.5px;
   }
-  .log-item:last-child { border-bottom: none; }
   .log-num { color: var(--wheat); font-weight: 700; min-width: 22px; }
   .log-n { font-weight: 700; }
   .log-geo { color: var(--text-dim); font-size: 11px; font-variant-numeric: tabular-nums; }
   .log-del { background: none; border: none; color: var(--err); font-size: 17px; cursor: pointer; padding: 0 2px 0 8px; line-height: 1; }
+  .log-real-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .log-real-row label { font-size: 10.5px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+  .log-real-input {
+    flex: 1; max-width: 100px; background: var(--surface-raised); border: 1px solid var(--line);
+    border-radius: 6px; padding: 5px 8px; color: var(--text); font-size: 12px;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .log-real-input:focus { outline: 1px solid var(--wheat); }
+
+  .recal-wrap { margin-top: 16px; }
+  .recal-text { font-size: 11.5px; color: var(--text-dim); margin-bottom: 10px; line-height: 1.5; }
 
   .map-wrap {
     width: 100%; margin-top: 16px; background: var(--surface);
@@ -209,6 +229,22 @@
     <div class="field">
       <label for="loteInput">Lote</label>
       <input type="text" id="loteInput" placeholder="Ej: Lote 4">
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="cropInput">Cultivo</label>
+        <select id="cropInput">
+          <option value="trigo">Trigo</option>
+          <option value="cebada">Cebada</option>
+          <option value="maiz">Maíz</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="stageInput">Estadio</label>
+        <select id="stageInput"></select>
+      </div>
     </div>
 
     <div class="boundary-box">
@@ -289,6 +325,11 @@
     <ul class="log-list" id="logList"></ul>
   </div>
 
+  <div class="log-wrap recal-wrap" id="recalBox" style="display:none;">
+    <div class="recal-text" id="recalText"></div>
+    <button class="btn-secondary" id="recalBtn" style="width:100%;">Recalibrar fórmula</button>
+  </div>
+
   <div class="map-wrap" id="mapWrap" style="display:none;">
     <div class="log-header"><span id="mapTitle">Mapa de lecturas</span></div>
     <div id="mapView"></div>
@@ -316,12 +357,17 @@
   const logList = document.getElementById('logList');
   const exportCsvBtn = document.getElementById('exportCsvBtn');
   const exportKmlBtn = document.getElementById('exportKmlBtn');
+  const recalBox = document.getElementById('recalBox');
+  const recalText = document.getElementById('recalText');
+  const recalBtn = document.getElementById('recalBtn');
   const mapWrap = document.getElementById('mapWrap');
   const mapTitle = document.getElementById('mapTitle');
   const mapLegend = document.getElementById('mapLegend');
   const sessionForm = document.getElementById('sessionForm');
   const campoInput = document.getElementById('campoInput');
   const loteInput = document.getElementById('loteInput');
+  const cropInput = document.getElementById('cropInput');
+  const stageInput = document.getElementById('stageInput');
   const startSessionBtn = document.getElementById('startSessionBtn');
   const sessionHeader = document.getElementById('sessionHeader');
   const sessionTitle = document.getElementById('sessionTitle');
@@ -388,6 +434,41 @@
   function showError(msg) { errorBox.textContent = msg; errorBox.classList.add('show'); }
   function clearError() { errorBox.classList.remove('show'); }
 
+  // Estadios fenológicos según bibliografía (Zadoks para trigo/cebada, escala vegetativa/reproductiva para maíz)
+  const STAGES_BY_CROP = {
+    trigo: [
+      { v: 'macollaje', l: 'Macollaje (Z22-Z24)' },
+      { v: 'encanazon', l: 'Encañazón (Z31)' },
+      { v: 'hoja_bandera', l: 'Hoja bandera (Z39)' },
+      { v: 'espigazon', l: 'Espigazón' },
+    ],
+    cebada: [
+      { v: 'macollaje', l: 'Macollaje (Z22-Z24)' },
+      { v: 'encanazon', l: 'Encañazón (Z31)' },
+      { v: 'hoja_bandera', l: 'Hoja bandera (Z39)' },
+      { v: 'espigazon', l: 'Espigazón' },
+    ],
+    maiz: [
+      { v: 'v6', l: 'V6 (6 hojas)' },
+      { v: 'v8', l: 'V8 (8 hojas)' },
+      { v: 'v10_v12', l: 'V10-V12' },
+      { v: 'vt', l: 'VT (floración)' },
+      { v: 'r1_r3', l: 'R1-R3 (grano lechoso-pastoso)' },
+    ],
+    otro: [
+      { v: 'temprano', l: 'Temprano (vegetativo)' },
+      { v: 'medio', l: 'Medio' },
+      { v: 'tardio', l: 'Tardío (reproductivo)' },
+    ],
+  };
+
+  function populateStages() {
+    const stages = STAGES_BY_CROP[cropInput.value] || STAGES_BY_CROP.otro;
+    stageInput.innerHTML = stages.map(s => `<option value="${s.v}">${s.l}</option>`).join('');
+  }
+  cropInput.addEventListener('change', populateStages);
+  populateStages();
+
   enableRefBtn.addEventListener('click', () => {
     if (pendingReferenceTarget) {
       pendingReferenceTarget = null;
@@ -429,9 +510,67 @@
     if (document.visibilityState === 'visible' && activeSession && !wakeLock) requestWakeLock();
   });
 
+  const COEFFS_KEY = 'ntester_coeffs';
+  function loadCoeffs() {
+    try {
+      const raw = localStorage.getItem(COEFFS_KEY);
+      return raw ? JSON.parse(raw) : { a: 478, b: -449 };
+    } catch (e) { return { a: 478, b: -449 }; }
+  }
+  function saveCoeffs(c) {
+    try { localStorage.setItem(COEFFS_KEY, JSON.stringify(c)); } catch (e) {}
+  }
+  let coeffs = loadCoeffs();
+
+  // Junta todos los pares (ln(ratio), valor real de YaraPlus) de todas las sesiones, activa + guardadas
+  function collectCalibrationPairs() {
+    const all = [];
+    if (activeSession) all.push(...activeSession.readings);
+    sessions.forEach(s => all.push(...s.readings));
+    return all
+      .filter(r => r.ratio && r.real !== null && r.real !== undefined && !isNaN(r.real))
+      .map(r => ({ x: Math.log(r.ratio), y: r.real }));
+  }
+
+  function updateRecalibrateAvailability() {
+    const pairs = collectCalibrationPairs();
+    if (pairs.length >= 3) {
+      recalBox.style.display = 'block';
+      recalText.textContent = `${pairs.length} lecturas con valor real cargado. Podés recalibrar la fórmula con estos datos.`;
+    } else {
+      recalBox.style.display = pairs.length > 0 ? 'block' : 'none';
+      if (pairs.length > 0) recalText.textContent = `${pairs.length} lectura(s) con valor real — hacen falta al menos 3 para recalibrar.`;
+    }
+  }
+
+  recalBtn.addEventListener('click', () => {
+    const pairs = collectCalibrationPairs();
+    if (pairs.length < 3) return;
+
+    const n = pairs.length;
+    const sumX = pairs.reduce((a, p) => a + p.x, 0);
+    const sumY = pairs.reduce((a, p) => a + p.y, 0);
+    const meanX = sumX / n, meanY = sumY / n;
+    let num = 0, den = 0;
+    pairs.forEach(p => { num += (p.x - meanX) * (p.y - meanY); den += (p.x - meanX) ** 2; });
+    if (den === 0) { showError('No hay suficiente variación en los datos para recalibrar.'); return; }
+
+    const a = num / den;
+    const b = meanY - a * meanX;
+
+    // Error típico (RMSE) con la fórmula nueva
+    const rmse = Math.sqrt(pairs.reduce((acc, p) => acc + (a * p.x + b - p.y) ** 2, 0) / n);
+
+    if (!confirm(`Nueva fórmula: N ≈ ${a.toFixed(1)} × ln(ratio) + ${b.toFixed(1)}\nBasada en ${n} pares, error típico ±${rmse.toFixed(0)}.\n\n¿Aplicarla para las próximas lecturas?`)) return;
+
+    coeffs = { a, b };
+    saveCoeffs(coeffs);
+    recalText.textContent = `Fórmula actualizada (${n} pares, error típico ±${rmse.toFixed(0)}). Se aplica desde la próxima lectura.`;
+  });
+
   function estimateN(v11, v12) {
     if (v11 <= 0 || v12 <= 0) return null;
-    return 478 * Math.log(v11 / v12) - 449;
+    return coeffs.a * Math.log(v11 / v12) + coeffs.b;
   }
 
   function classifySI(si) {
@@ -550,12 +689,18 @@
     const readings = activeSession ? activeSession.readings : [];
     logWrap.style.display = readings.length ? 'block' : 'none';
     logList.innerHTML = readings.map((r, i) => `
-      <li class="log-item">
-        <span class="log-num">#${r.num}</span>
-        <span class="log-n">N≈${r.n}${r.si !== null && r.si !== undefined ? ` <span style="color:${classifySI(r.si).color}">· ${r.si}%</span>` : ''}</span>
-        <span class="log-geo">${r.geo ? r.geo.lat.toFixed(5) + ', ' + r.geo.lon.toFixed(5) : 'sin GPS'}</span>
-        <span class="log-geo">${r.time}</span>
-        <button class="log-del" data-idx="${i}" aria-label="Borrar esta medición">×</button>
+      <li class="log-item-full">
+        <div class="log-item">
+          <span class="log-num">#${r.num}</span>
+          <span class="log-n">N≈${r.n}${r.si !== null && r.si !== undefined ? ` <span style="color:${classifySI(r.si).color}">· ${r.si}%</span>` : ''}</span>
+          <span class="log-geo">${r.geo ? r.geo.lat.toFixed(5) + ', ' + r.geo.lon.toFixed(5) : 'sin GPS'}</span>
+          <span class="log-geo">${r.time}</span>
+          <button class="log-del" data-idx="${i}" aria-label="Borrar esta medición">×</button>
+        </div>
+        <div class="log-real-row">
+          <label>YaraPlus:</label>
+          <input type="number" class="log-real-input" data-idx="${i}" placeholder="valor real" value="${r.real !== null && r.real !== undefined ? r.real : ''}">
+        </div>
       </li>
     `).join('');
     logList.querySelectorAll('.log-del').forEach(btn => {
@@ -566,7 +711,17 @@
         renderLog();
       });
     });
+    logList.querySelectorAll('.log-real-input').forEach(input => {
+      input.addEventListener('change', () => {
+        const idx = Number(input.dataset.idx);
+        const val = parseFloat(input.value);
+        activeSession.readings[idx].real = isNaN(val) ? null : val;
+        saveActive();
+        updateRecalibrateAvailability();
+      });
+    });
     renderMap();
+    updateRecalibrateAvailability();
   }
 
   let mapInstance = null, markersLayer = null, boundaryLayer = null, heatLayer = null;
@@ -739,6 +894,10 @@
 
   // --- Exportar ---
   function csvFor(session) {
+    let meta = '';
+    if (session.cropLabel) meta += `cultivo,${session.cropLabel}\n`;
+    if (session.stageLabel) meta += `estadio,${session.stageLabel}\n`;
+    if (meta) meta += '\n';
     const header = 'numero,n_estimado,indice_suficiencia_pct,estado,latitud,longitud,precision_m,hora\n';
     const rows = session.readings.map(r =>
       [r.num, r.n, r.si !== null && r.si !== undefined ? r.si : '', r.status || '',
@@ -748,7 +907,7 @@
     if (session.referenceAvg) {
       refBlock = `\n\nparcela_referencia_promedio,${session.referenceAvg}\nparcela_referencia_lecturas,${session.referenceReadings.length}`;
     }
-    return header + rows + refBlock;
+    return meta + header + rows + refBlock;
   }
 
   function kmlFor(session) {
@@ -774,6 +933,7 @@
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>${session.campo} - ${session.lote}</name>
+    <description>${session.cropLabel || ''}${session.stageLabel ? ' · ' + session.stageLabel : ''}</description>
     ${boundaryKml}
     ${placemarks}
   </Document>
@@ -804,9 +964,11 @@
       pastSessions.style.display = 'none';
       sessionHeader.classList.add('show');
       connectBtn.style.display = 'block';
-      sessionTitle.textContent = `${activeSession.campo} · ${activeSession.lote}`;
+      sessionTitle.textContent = `${activeSession.campo} · ${activeSession.lote}`
+        + (activeSession.cropLabel ? ` · ${activeSession.cropLabel}` : '');
       const start = new Date(activeSession.startTime);
       let metaParts = ['Iniciada ' + start.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })];
+      if (activeSession.stageLabel) metaParts.push(activeSession.stageLabel);
       if (activeSession.boundary) metaParts.push('límite cargado');
       if (activeSession.referenceTarget) {
         metaParts.push(activeSession.referenceAvg
@@ -844,7 +1006,7 @@
       return `
         <div class="past-item" data-id="${s.id}">
           <div class="pi-title">${s.campo} · ${s.lote}</div>
-          <div class="pi-meta">${dateStr} — ${s.readings.length} ${s.readings.length === 1 ? 'lectura' : 'lecturas'}${s.boundary ? ' · con límite' : ''}${s.referenceAvg ? ` · ref. N≈${s.referenceAvg}` : ''}</div>
+          <div class="pi-meta">${dateStr} — ${s.cropLabel ? s.cropLabel + (s.stageLabel ? ' · ' + s.stageLabel : '') + ' — ' : ''}${s.readings.length} ${s.readings.length === 1 ? 'lectura' : 'lecturas'}${s.boundary ? ' · con límite' : ''}${s.referenceAvg ? ` · ref. N≈${s.referenceAvg}` : ''}</div>
           <div class="pi-actions">
             <button class="btn-export pi-map" data-id="${s.id}">Ver mapa</button>
             <button class="btn-export pi-csv" data-id="${s.id}">CSV</button>
@@ -897,6 +1059,10 @@
     activeSession = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       campo, lote,
+      crop: cropInput.value,
+      cropLabel: cropInput.options[cropInput.selectedIndex].text,
+      stage: stageInput.value,
+      stageLabel: stageInput.options[stageInput.selectedIndex] ? stageInput.options[stageInput.selectedIndex].text : '',
       startTime: new Date().toISOString(),
       boundary: pendingBoundary,
       referenceTarget: pendingReferenceTarget,
@@ -906,6 +1072,7 @@
     };
     saveActive();
     campoInput.value = ''; loteInput.value = ''; pendingBoundary = null; pendingReferenceTarget = null;
+    cropInput.selectedIndex = 0; populateStages();
     enableRefBtn.textContent = 'Usar parcela de referencia';
     refStatus.textContent = 'Sin parcela de referencia: el mapa va a usar rangos relativos entre tus lecturas';
     refStatus.classList.remove('ok');
@@ -1013,7 +1180,7 @@
     lastTime.textContent = 'Última lectura: ' + timeStr;
 
     const geo = await getLocation();
-    activeSession.readings.unshift({ num, n: rounded, si, status: status ? status.label : null, geo, time: timeStr });
+    activeSession.readings.unshift({ num, n: rounded, si, status: status ? status.label : null, ratio: v11 / v12, real: null, geo, time: timeStr });
     saveActive();
     countEl.textContent = activeSession.readings.length + (activeSession.readings.length === 1 ? ' lectura guardada' : ' lecturas guardadas');
     renderLog();
@@ -1103,6 +1270,7 @@
 
   refreshSessionUI();
   if (activeSession) { renderLog(); requestWakeLock(); }
+  updateRecalibrateAvailability();
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
